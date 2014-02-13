@@ -6,25 +6,26 @@
 package com.xxworkshop.common;
 
 import android.util.Base64;
-import android.util.Base64InputStream;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public final class XXFormatter {
-    public static String JsonEncode(JSONObject jobj) {
+    public static String jsonEncode(JSONObject jobj) {
         return jobj.toString();
     }
 
-    public static String JsonEncode(JSONArray jarr) {
+    public static String jsonEncode(JSONArray jarr) {
         return jarr.toString();
     }
 
-    public static JSONObject JsonObjectDecode(String json) {
+    public static JSONObject jsonObjectDecode(String json) {
         JSONObject jobj = null;
         try {
             jobj = new JSONObject(json);
@@ -34,7 +35,7 @@ public final class XXFormatter {
         return jobj;
     }
 
-    public static JSONArray JsonArrayDecode(String json) {
+    public static JSONArray jsonArrayDecode(String json) {
         JSONArray jarr = null;
         try {
             jarr = new JSONArray(json);
@@ -44,7 +45,7 @@ public final class XXFormatter {
         return jarr;
     }
 
-    public static byte[] Zip(byte[] data) {
+    public static byte[] zip(byte[] data) {
         byte[] result = null;
         try {
             ByteArrayInputStream bais = new ByteArrayInputStream(data);
@@ -68,7 +69,7 @@ public final class XXFormatter {
         return result;
     }
 
-    public static byte[] UnZip(byte[] data) {
+    public static byte[] unZip(byte[] data) {
         byte[] result = null;
         try {
             ByteArrayInputStream bais = new ByteArrayInputStream(data);
@@ -90,15 +91,15 @@ public final class XXFormatter {
         return result;
     }
 
-    public static byte[] Base64Encode(byte[] data) {
+    public static byte[] base64Encode(byte[] data) {
         return Base64.encode(data, Base64.DEFAULT);
     }
 
-    public static byte[] Base64Decode(byte[] data) {
+    public static byte[] base64Decode(byte[] data) {
         return Base64.decode(data, Base64.DEFAULT);
     }
 
-    public static byte[] ZipAndBaseEncode2(byte[] data) {
-        return Base64Encode(Base64Encode(Zip(data)));
+    public static byte[] zipAndBaseEncode2(byte[] data) {
+        return base64Encode(base64Encode(zip(data)));
     }
 }
