@@ -5,11 +5,18 @@
 
 package com.xxworkshop.test;
 
+import com.xxworkshop.common.XXFormatter;
 import com.xxworkshop.common.XXSystem;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class Main {
     public static void main(String[] args) {
-        XXSystem s = new XXSystem();
-        System.out.println(String.valueOf((int)s.getTimeStamp()));
+        XXFormatter f = new XXFormatter();
+        Map m = new HashMap();
+        m.put("aaa", 111);
+        m.put("bbb", "abc");
+        System.out.println(f.map2String(m, "=##", "&%%"));
     }
 }

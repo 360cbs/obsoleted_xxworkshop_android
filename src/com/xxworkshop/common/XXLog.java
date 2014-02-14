@@ -8,17 +8,17 @@ package com.xxworkshop.common;
 import android.util.Log;
 
 public final class XXLog {
-    public static final int VERBOSE = Log.VERBOSE;
-    public static final int DEBUG = Log.DEBUG;
-    public static final int INFO = Log.INFO;
-    public static final int WARN = Log.WARN;
-    public static final int ERROR = Log.ERROR;
-    public static final int ASSERT = Log.ASSERT;
+    public final static int VERBOSE = Log.VERBOSE;
+    public final static int DEBUG = Log.DEBUG;
+    public final static int INFO = Log.INFO;
+    public final static int WARN = Log.WARN;
+    public final static int ERROR = Log.ERROR;
+    public final static int ASSERT = Log.ASSERT;
 
-    public static String Tag = "xxworkshop";
-    public static int LogLevel = DEBUG;
+    public final static String Tag = "xxworkshop";
+    public final static int LogLevel = DEBUG;
 
-    public static void log(String message) {
+    public final static void log(String message) {
         switch (LogLevel) {
             case VERBOSE:
                 Log.v(Tag, message);
@@ -41,15 +41,15 @@ public final class XXLog {
         }
     }
 
-    public static void log(int message) {
+    public final static void log(int message) {
         log(String.valueOf(message));
     }
 
-    public static void log(float message) {
+    public final static void log(float message) {
         log(String.valueOf(message));
     }
 
-    public static void log(Object message) {
+    public final static void log(Object message) {
         log(message.toString());
     }
 }

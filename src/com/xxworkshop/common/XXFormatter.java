@@ -13,19 +13,20 @@ import org.json.JSONObject;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public final class XXFormatter {
-    public static String jsonEncode(JSONObject jobj) {
+    public final static String jsonEncode(JSONObject jobj) {
         return jobj.toString();
     }
 
-    public static String jsonEncode(JSONArray jarr) {
+    public final static String jsonEncode(JSONArray jarr) {
         return jarr.toString();
     }
 
-    public static JSONObject jsonObjectDecode(String json) {
+    public final static JSONObject jsonObjectDecode(String json) {
         JSONObject jobj = null;
         try {
             jobj = new JSONObject(json);
@@ -35,7 +36,7 @@ public final class XXFormatter {
         return jobj;
     }
 
-    public static JSONArray jsonArrayDecode(String json) {
+    public final static JSONArray jsonArrayDecode(String json) {
         JSONArray jarr = null;
         try {
             jarr = new JSONArray(json);
@@ -45,7 +46,21 @@ public final class XXFormatter {
         return jarr;
     }
 
-    public static byte[] zip(byte[] data) {
+    public final static String map2String(Map data, String itemSplitter, String sectionSplitter) {
+        StringBuffer sb = new StringBuffer();
+        for (Object key : data.keySet()) {
+            sb.append(key);
+            sb.append(itemSplitter);
+            sb.append(data.get(key));
+            sb.append(sectionSplitter);
+        }
+        if (sb.length() > 0) {
+            sb.delete(sb.length() - sectionSplitter.length(), sb.length());
+        }
+        return sb.toString();
+    }
+
+    public final static byte[] zip(byte[] data) {
         byte[] result = null;
         try {
             ByteArrayInputStream bais = new ByteArrayInputStream(data);
@@ -69,7 +84,7 @@ public final class XXFormatter {
         return result;
     }
 
-    public static byte[] unZip(byte[] data) {
+    public final static byte[] unZip(byte[] data) {
         byte[] result = null;
         try {
             ByteArrayInputStream bais = new ByteArrayInputStream(data);
@@ -91,15 +106,15 @@ public final class XXFormatter {
         return result;
     }
 
-    public static byte[] base64Encode(byte[] data) {
+    public final static byte[] base64Encode(byte[] data) {
         return Base64.encode(data, Base64.DEFAULT);
     }
 
-    public static byte[] base64Decode(byte[] data) {
+    public final static byte[] base64Decode(byte[] data) {
         return Base64.decode(data, Base64.DEFAULT);
     }
 
-    public static byte[] zipAndBaseEncode2(byte[] data) {
+    public final static byte[] zipAndBaseEncode2(byte[] data) {
         return base64Encode(base64Encode(zip(data)));
     }
 }

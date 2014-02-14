@@ -8,12 +8,12 @@ package com.xxworkshop.common;
 import android.content.Context;
 import com.lurencun.cfuture09.androidkit.utils.lang.Installation;
 
-public class XXSystem {
-    public static String getDeviceId(Context context) {
+public final class XXSystem {
+    public final static String getDeviceId(Context context) {
         return Installation.getID(context);
     }
 
-    public static double getTimeStamp() {
-        return System.currentTimeMillis()/1000.0;
+    public final static double getTimeStamp() {
+        return System.currentTimeMillis() / 1000.0;
     }
 }
