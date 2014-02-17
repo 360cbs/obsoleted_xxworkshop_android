@@ -6,7 +6,6 @@
 package com.xxworkshop.test;
 
 import com.xxworkshop.common.XXFormatter;
-import com.xxworkshop.common.XXSystem;
 
 import java.util.HashMap;
 import java.util.Map;

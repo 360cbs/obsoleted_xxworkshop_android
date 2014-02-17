@@ -10,7 +10,7 @@ import com.lurencun.cfuture09.androidkit.utils.lang.Installation;
 
 public final class XXSystem {
     public final static String getDeviceId(Context context) {
-        return Installation.getID(context);
+        return Installation.getID(context).toUpperCase();
     }
 
     public final static double getTimeStamp() {

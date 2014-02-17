@@ -9,6 +9,6 @@ import java.util.UUID;
 
 public final class XXGenerator {
     public final static String getUUID() {
-        return UUID.randomUUID().toString();
+        return UUID.randomUUID().toString().toUpperCase();
     }
 }

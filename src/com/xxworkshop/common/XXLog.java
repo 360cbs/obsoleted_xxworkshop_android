@@ -16,7 +16,7 @@ public final class XXLog {
     public final static int ASSERT = Log.ASSERT;
 
     public final static String Tag = "xxworkshop";
-    public final static int LogLevel = DEBUG;
+    public static int LogLevel = DEBUG;
 
     public final static void log(String message) {
         switch (LogLevel) {

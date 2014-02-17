@@ -6,9 +6,6 @@
 package com.xxworkshop.common;
 
 import android.util.Base64;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -18,34 +15,6 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public final class XXFormatter {
-    public final static String jsonEncode(JSONObject jobj) {
-        return jobj.toString();
-    }
-
-    public final static String jsonEncode(JSONArray jarr) {
-        return jarr.toString();
-    }
-
-    public final static JSONObject jsonObjectDecode(String json) {
-        JSONObject jobj = null;
-        try {
-            jobj = new JSONObject(json);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return jobj;
-    }
-
-    public final static JSONArray jsonArrayDecode(String json) {
-        JSONArray jarr = null;
-        try {
-            jarr = new JSONArray(json);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return jarr;
-    }
-
     public final static String map2String(Map data, String itemSplitter, String sectionSplitter) {
         StringBuffer sb = new StringBuffer();
         for (Object key : data.keySet()) {
