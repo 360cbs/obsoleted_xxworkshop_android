@@ -9,6 +9,7 @@ package com.xxworkshop.ui;
  * Created by brochexu on 2/19/14.
  */
 public enum XXPullToRefreshState {
+    DEfault,
     PULL_TO_REFRESH,
     RELEASE_TO_REFRESH,
     REFRESHING,

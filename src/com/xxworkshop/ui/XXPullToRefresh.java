@@ -18,21 +18,21 @@ import android.widget.ScrollView;
 
 import java.util.Observable;
 import java.util.Observer;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class XXPullToRefresh extends LinearLayout implements Observer {
     private int DONEDELAY = 500;
 
     private XXPullToRefreshDelegate delegate;
+    private OnTouchListener scrollViewOnTouchListener;
 
     private LayoutInflater inflater;
     private Context context;
-    private Timer timer;
     private Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            XXPullToRefresh.this.onTimerTick();
+            if (!XXPullToRefresh.this.onTimerTick()) {
+                handler.sendMessageDelayed(Message.obtain(), 5);
+            }
         }
     };
 
@@ -40,7 +40,7 @@ public class XXPullToRefresh extends LinearLayout implements Observer {
     private ScrollView scrollView;
     private ViewGroup bodyView;
 
-    private XXPullToRefreshState state = XXPullToRefreshState.PULL_TO_REFRESH;
+    private XXPullToRefreshState state = XXPullToRefreshState.DEfault;
     private int headerHeight;
     private boolean isDragging = false;
     private int doneDelay = 0;
@@ -64,6 +64,7 @@ public class XXPullToRefresh extends LinearLayout implements Observer {
             doneDelay = 0;
             state = XXPullToRefreshState.DONE;
             this.delegate.OnStateChanged(headerView, state);
+            handler.sendMessage(Message.obtain());
         }
     }
 
@@ -73,15 +74,6 @@ public class XXPullToRefresh extends LinearLayout implements Observer {
         if (delegate != null) {
             delegate.addObserver(this);
         }
-        timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                Message message = Message.obtain();
-                message.what = 1;
-                handler.sendMessage(message);
-            }
-        }, 0, 100);
 
         // header view
         headerView = (ViewGroup) inflater.inflate(headerid, null);
@@ -114,10 +106,14 @@ public class XXPullToRefresh extends LinearLayout implements Observer {
                             int offset = (int) motionEvent.getY() - startEventY;
                             if (!isDragging && offset > 0) {
                                 isDragging = true;
+                                startEventY = (int) motionEvent.getY();
+                                lastHeaderPaddingY = headerView.getPaddingTop();
+                                offset = 0;
                             }
                             if (isDragging) {
                                 int headerPaddingY = offset + lastHeaderPaddingY;
                                 headerPaddingY = headerPaddingY <= -headerHeight ? -headerHeight : headerPaddingY;
+                                headerPaddingY = headerPaddingY >= 0 ? 0 : headerPaddingY;
                                 headerView.setPadding(0, headerPaddingY, 0, 0);
                                 lastHeaderPaddingY = headerPaddingY;
                                 if (headerPaddingY < 0 && state != XXPullToRefreshState.PULL_TO_REFRESH) {
@@ -134,42 +130,42 @@ public class XXPullToRefresh extends LinearLayout implements Observer {
                     }
                 } else if (action == MotionEvent.ACTION_UP) {
                     if (state != XXPullToRefreshState.REFRESHING && isDragging) {
-                        if (state == XXPullToRefreshState.RELEASE_TO_REFRESH) {
+                        if (state == XXPullToRefreshState.PULL_TO_REFRESH) {
+                            handler.sendMessage(Message.obtain());
+                        } else if (state == XXPullToRefreshState.RELEASE_TO_REFRESH) {
                             state = XXPullToRefreshState.REFRESHING;
                             XXPullToRefresh.this.delegate.OnStateChanged(headerView, state);
                             XXPullToRefresh.this.delegate.OnRefresh();
+                            handler.sendMessage(Message.obtain());
                         }
                     }
                     isDragging = false;
                 }
 
-                return isDragging;
+                boolean flag = isDragging;
+                if (scrollViewOnTouchListener != null) {
+                    flag = flag || scrollViewOnTouchListener.onTouch(view, motionEvent);
+                }
+                return flag;
             }
         });
     }
 
-    private void onTimerTick() {
+    private boolean onTimerTick() {
+        boolean flag = false;
         if (state == XXPullToRefreshState.PULL_TO_REFRESH) {
-            if (!isDragging) {
-                int paddingTop = headerView.getPaddingTop();
-                int offset = paddingTop + headerHeight;
-                if (offset > 0) {
-                    if (offset > 16) {
-                        headerView.setPadding(0, paddingTop - offset / 2, 0, 0);
-                    } else {
-                        headerView.setPadding(0, -headerHeight, 0, 0);
-                    }
-                }
-            }
-        }
-        if (state == XXPullToRefreshState.REFRESHING) {
-            int offset = headerView.getPaddingTop();
+            int paddingTop = headerView.getPaddingTop();
+            int offset = paddingTop + headerHeight;
             if (offset > 0) {
-                if (Math.abs(offset) > 16) {
-                    headerView.setPadding(0, headerView.getPaddingTop() - offset / 2, 0, 0);
+                if (offset > 16) {
+                    headerView.setPadding(0, paddingTop - offset / 2, 0, 0);
                 } else {
-                    headerView.setPadding(0, 0, 0, 0);
+                    headerView.setPadding(0, -headerHeight, 0, 0);
                 }
+            } else {
+                state = XXPullToRefreshState.DEfault;
+                delegate.OnStateChanged(headerView, state);
+                flag = true;
             }
         } else if (state == XXPullToRefreshState.DONE) {
             if (doneDelay >= DONEDELAY) {
@@ -181,11 +177,16 @@ public class XXPullToRefresh extends LinearLayout implements Observer {
                     } else {
                         headerView.setPadding(0, -headerHeight, 0, 0);
                     }
+                } else {
+                    state = XXPullToRefreshState.DEfault;
+                    delegate.OnStateChanged(headerView, state);
+                    flag = true;
                 }
             } else {
-                doneDelay += 100;
+                doneDelay += 5;
             }
         }
+        return flag;
     }
 
     // calculate view height manually, because header height is not available in OnCreate
@@ -213,7 +214,15 @@ public class XXPullToRefresh extends LinearLayout implements Observer {
         return bodyView;
     }
 
+    public ScrollView getScrollView() {
+        return scrollView;
+    }
+
     public void setDoneDelay(int doneDelay) {
         this.DONEDELAY = doneDelay;
+    }
+
+    public void setScrollViewOnTouchListener(OnTouchListener scrollViewOnTouchListener) {
+        this.scrollViewOnTouchListener = scrollViewOnTouchListener;
     }
 }
