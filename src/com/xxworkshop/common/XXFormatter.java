@@ -10,6 +10,8 @@ import android.util.Base64;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -85,5 +87,11 @@ public final class XXFormatter {
 
     public final static byte[] zipAndBaseEncode2(byte[] data) {
         return base64Encode(base64Encode(zip(data)));
+    }
+
+    public final static String double2Date(double timestamp, String format) {
+        SimpleDateFormat sdf = new SimpleDateFormat(format);
+        long ltimestamp = (long) (timestamp * 1000);
+        return sdf.format(new Date(ltimestamp));
     }
 }
