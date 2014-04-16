@@ -10,9 +10,12 @@ import android.util.Base64;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -91,6 +94,7 @@ public final class XXFormatter {
 
     public final static String double2Date(double timestamp, String format) {
         SimpleDateFormat sdf = new SimpleDateFormat(format);
+        sdf.setCalendar(Calendar.getInstance(TimeZone.getTimeZone("Asia/Shanghai")));
         long ltimestamp = (long) (timestamp * 1000);
         return sdf.format(new Date(ltimestamp));
     }

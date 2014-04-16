@@ -52,4 +52,8 @@ public final class XXLog {
     public final static void log(Object message) {
         log(message.toString());
     }
+
+    public final static void logSplitter() {
+        log("====================");
+    }
 }

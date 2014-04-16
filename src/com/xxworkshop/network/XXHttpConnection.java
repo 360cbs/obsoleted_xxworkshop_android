@@ -19,7 +19,7 @@ import java.util.Hashtable;
 
 public final class XXHttpConnection {
     public static String Host = "";
-    public static boolean Debug = false;
+    public static boolean Debug = true;
     private MessageHandler messageHandler = new MessageHandler();
 
     private static XXHttpConnection instance = new XXHttpConnection();
@@ -92,6 +92,8 @@ public final class XXHttpConnection {
                     connection.setDoInput(true);
                     connection.setDoOutput(true);
                     connection.setRequestMethod(method);
+                    connection.setConnectTimeout(5000);
+                    connection.setReadTimeout(10000);
                     connection.connect();
 
                     OutputStream os = connection.getOutputStream();
@@ -105,6 +107,8 @@ public final class XXHttpConnection {
                     connection = (HttpURLConnection) (new URL(surl + "?" + sparams)).openConnection();
                     connection.setDoInput(true);
                     connection.setDoOutput(true);
+                    connection.setConnectTimeout(5000);
+                    connection.setReadTimeout(10000);
                     connection.setRequestMethod(method);
                     connection.connect();
                 }
@@ -152,14 +156,14 @@ public final class XXHttpConnection {
             XXResponse response = (XXResponse) map.get("response");
             XXResponseHandler handler = (XXResponseHandler) map.get("handler");
 
-            if (handler != null) {
-                handler.handleResponse(response);
-            }
             if (handlers.containsKey(response.url)) {
                 ArrayList<XXResponseHandler> handlerList = handlers.get(response.url);
                 for (XXResponseHandler thandler : handlerList) {
                     thandler.handleResponse(response);
                 }
+            }
+            if (handler != null) {
+                handler.handleResponse(response);
             }
         }
     }
