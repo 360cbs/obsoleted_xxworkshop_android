@@ -5,14 +5,14 @@
 
 package com.xxworkshop.test;
 
-import com.xxworkshop.common.XXFormatter;
+import com.xxworkshop.common.Formatter;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class Main {
     public static void main(String[] args) {
-        XXFormatter f = new XXFormatter();
+        Formatter f = new Formatter();
         Map m = new HashMap();
         m.put("aaa", 111);
         m.put("bbb", "abc");

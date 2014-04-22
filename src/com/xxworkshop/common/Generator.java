@@ -7,7 +7,7 @@ package com.xxworkshop.common;
 
 import java.util.UUID;
 
-public final class XXGenerator {
+public final class Generator {
     public final static String getUUID() {
         return UUID.randomUUID().toString().toUpperCase();
     }

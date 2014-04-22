@@ -7,7 +7,7 @@ package com.xxworkshop.common;
 
 import android.util.Log;
 
-public final class XXLog {
+public final class L {
     public final static int VERBOSE = Log.VERBOSE;
     public final static int DEBUG = Log.DEBUG;
     public final static int INFO = Log.INFO;

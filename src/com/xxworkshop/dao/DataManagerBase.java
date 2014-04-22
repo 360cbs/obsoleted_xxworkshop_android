@@ -14,8 +14,8 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 
-public abstract class XXDataManagerBase extends SQLiteOpenHelper {
-    public XXDataManagerBase(Context context, String name, int version) {
+public abstract class DataManagerBase extends SQLiteOpenHelper {
+    public DataManagerBase(Context context, String name, int version) {
         super(context, name, null, version);
     }
 

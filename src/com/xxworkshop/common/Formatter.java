@@ -6,8 +6,8 @@
 package com.xxworkshop.common;
 
 import android.util.Base64;
-import com.xxworkshop.common.formatter.XXAnchor;
-import com.xxworkshop.common.formatter.XXRect;
+import com.xxworkshop.common.formatter.Anchor;
+import com.xxworkshop.common.formatter.Rect;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -20,7 +20,7 @@ import java.util.TimeZone;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-public final class XXFormatter {
+public final class Formatter {
     public final static String map2String(Map data, String itemSplitter, String sectionSplitter) {
         StringBuffer sb = new StringBuffer();
         for (Object key : data.keySet()) {
@@ -101,35 +101,35 @@ public final class XXFormatter {
     }
 
 
-    public final static XXRect convertRect(XXRect origin, XXAnchor anchor) {
-        XXRect rect = new XXRect();
+    public final static Rect convertRect(Rect origin, Anchor anchor) {
+        Rect rect = new Rect();
         rect.w = origin.w;
         rect.h = origin.h;
-        if (anchor == XXAnchor.LeftTop) {
+        if (anchor == Anchor.LeftTop) {
             rect.x = origin.x;
             rect.y = origin.y;
-        } else if (anchor == XXAnchor.CenterTop) {
+        } else if (anchor == Anchor.CenterTop) {
             rect.x = origin.x - origin.w / 2;
             rect.y = origin.y;
-        } else if (anchor == XXAnchor.RightTop) {
+        } else if (anchor == Anchor.RightTop) {
             rect.x = origin.x - origin.w;
             rect.y = origin.y;
-        } else if (anchor == XXAnchor.LeftCenter) {
+        } else if (anchor == Anchor.LeftCenter) {
             rect.x = origin.x;
             rect.y = origin.y - origin.h / 2;
-        } else if (anchor == XXAnchor.Center) {
+        } else if (anchor == Anchor.Center) {
             rect.x = origin.x - origin.w / 2;
             rect.y = origin.y - origin.h / 2;
-        } else if (anchor == XXAnchor.RightCenter) {
+        } else if (anchor == Anchor.RightCenter) {
             rect.x = origin.x - origin.w;
             rect.y = origin.y - origin.h / 2;
-        } else if (anchor == XXAnchor.LeftBottom) {
+        } else if (anchor == Anchor.LeftBottom) {
             rect.x = origin.x;
             rect.y = origin.y - origin.h;
-        } else if (anchor == XXAnchor.CenterBottom) {
+        } else if (anchor == Anchor.CenterBottom) {
             rect.x = origin.x - origin.w / 2;
             rect.y = origin.y - origin.h;
-        } else if (anchor == XXAnchor.RightBottom) {
+        } else if (anchor == Anchor.RightBottom) {
             rect.x = origin.x - origin.w;
             rect.y = origin.y - origin.h;
         } else {

@@ -4,17 +4,17 @@
  */
 package com.xxworkshop.ui.welcome;
 
-import com.xxworkshop.common.formatter.XXAnchor;
+import com.xxworkshop.common.formatter.Anchor;
 
 public final class ElementState {
-    public XXAnchor anchor = XXAnchor.LeftTop;
+    public Anchor anchor = Anchor.LeftTop;
     public int x = 0;
     public int y = 0;
     public int w = 0;
     public int h = 0;
     public int a = 0;
 
-    public ElementState setAnchor(XXAnchor anchor) {
+    public ElementState setAnchor(Anchor anchor) {
         this.anchor = anchor;
         return this;
     }

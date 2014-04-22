@@ -4,17 +4,17 @@
  */
 package com.xxworkshop.common.formatter;
 
-public final class XXRect {
+public final class Rect {
     public int x;
     public int y;
     public int w;
     public int h;
 
-    public XXRect() {
+    public Rect() {
 
     }
 
-    public XXRect(int x, int y, int w, int h) {
+    public Rect(int x, int y, int w, int h) {
         this.x = x;
         this.y = y;
         this.w = w;

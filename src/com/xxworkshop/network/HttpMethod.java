@@ -5,7 +5,7 @@
 
 package com.xxworkshop.network;
 
-public final class XXHttpMethod {
+public final class HttpMethod {
     public final static String Post = "POST";
     public final static String Get = "GET";
 }

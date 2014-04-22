@@ -7,8 +7,8 @@ package com.xxworkshop.network;
 
 import android.os.Handler;
 import android.os.Message;
-import com.xxworkshop.common.XXFormatter;
-import com.xxworkshop.common.XXLog;
+import com.xxworkshop.common.Formatter;
+import com.xxworkshop.common.L;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -17,50 +17,50 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
 
-public final class XXHttpConnection {
+public final class HttpConnection {
     public static String Host = "";
     public static boolean Debug = true;
     private MessageHandler messageHandler = new MessageHandler();
 
-    private static XXHttpConnection instance = new XXHttpConnection();
+    private static HttpConnection instance = new HttpConnection();
 
-    public static XXHttpConnection getInstance() {
+    public static HttpConnection getInstance() {
         return instance;
     }
 
-    private Hashtable<String, ArrayList<XXResponseHandler>> handlers;
+    private Hashtable<String, ArrayList<ResponseHandler>> handlers;
 
-    private XXHttpConnection() {
-        handlers = new Hashtable<String, ArrayList<XXResponseHandler>>();
+    private HttpConnection() {
+        handlers = new Hashtable<String, ArrayList<ResponseHandler>>();
     }
 
     public void sendRequest(String url, Hashtable<String, String> params) {
-        sendRequest(url, params, XXHttpMethod.Get, null);
+        sendRequest(url, params, HttpMethod.Get, null);
     }
 
-    public void sendRequest(String url, Hashtable<String, String> params, XXResponseHandler handler) {
-        sendRequest(url, params, XXHttpMethod.Get, handler);
+    public void sendRequest(String url, Hashtable<String, String> params, ResponseHandler handler) {
+        sendRequest(url, params, HttpMethod.Get, handler);
     }
 
-    public void sendRequest(String url, Hashtable<String, String> params, String method, XXResponseHandler handler) {
+    public void sendRequest(String url, Hashtable<String, String> params, String method, ResponseHandler handler) {
         XXHttpThread thread = new XXHttpThread(url, params, method, handler);
         thread.start();
     }
 
-    public void addResponseHandler(XXResponseHandler handler, String url) {
+    public void addResponseHandler(ResponseHandler handler, String url) {
         if (handlers.containsKey(url)) {
-            ArrayList<XXResponseHandler> handlerList = handlers.get(url);
+            ArrayList<ResponseHandler> handlerList = handlers.get(url);
             handlerList.add(handler);
         } else {
-            ArrayList<XXResponseHandler> handlerList = new ArrayList<XXResponseHandler>();
+            ArrayList<ResponseHandler> handlerList = new ArrayList<ResponseHandler>();
             handlerList.add(handler);
             handlers.put(url, handlerList);
         }
     }
 
-    public void removeResponseHandler(XXResponseHandler handler, String url) {
+    public void removeResponseHandler(ResponseHandler handler, String url) {
         if (handlers.containsKey(url)) {
-            ArrayList<XXResponseHandler> handlerList = handlers.get(url);
+            ArrayList<ResponseHandler> handlerList = handlers.get(url);
             if (handlerList.contains(handler)) {
                 handlerList.remove(handler);
             }
@@ -71,9 +71,9 @@ public final class XXHttpConnection {
         private String url;
         private Hashtable<String, String> params;
         private String method;
-        private XXResponseHandler handler;
+        private ResponseHandler handler;
 
-        public XXHttpThread(String url, Hashtable<String, String> params, String method, XXResponseHandler handler) {
+        public XXHttpThread(String url, Hashtable<String, String> params, String method, ResponseHandler handler) {
             this.url = url;
             this.params = params;
             this.method = method;
@@ -83,11 +83,11 @@ public final class XXHttpConnection {
         @Override
         public void run() {
             String surl = Host + url;
-            String sparams = XXFormatter.map2String(params, "=", "&");
+            String sparams = Formatter.map2String(params, "=", "&");
 
             try {
                 HttpURLConnection connection;
-                if (method.equals(XXHttpMethod.Post)) {
+                if (method.equals(HttpMethod.Post)) {
                     connection = (HttpURLConnection) (new URL(surl)).openConnection();
                     connection.setDoInput(true);
                     connection.setDoOutput(true);
@@ -113,7 +113,7 @@ public final class XXHttpConnection {
                     connection.connect();
                 }
                 if (Debug) {
-                    XXLog.log("==========>\nurl: "+surl+"\nparams: "+sparams+"\nmethod: "+method);
+                    L.log("==========>\nurl: " + surl + "\nparams: " + sparams + "\nmethod: " + method);
                 }
 
                 BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
@@ -126,10 +126,10 @@ public final class XXHttpConnection {
                 br.close();
                 connection.disconnect();
                 if (Debug) {
-                    XXLog.log("<==========\nresult: "+sb.toString());
+                    L.log("<==========\nresult: " + sb.toString());
                 }
 
-                XXResponse response = new XXResponse(url, params, true, sb.toString());
+                Response response = new Response(url, params, true, sb.toString());
                 HashMap<String, Object> map = new HashMap<String, Object>();
                 map.put("response", response);
                 map.put("handler", handler);
@@ -138,7 +138,7 @@ public final class XXHttpConnection {
                 messageHandler.sendMessage(message);
             } catch (IOException e) {
                 e.printStackTrace();
-                XXResponse response = new XXResponse(url, params, false, "");
+                Response response = new Response(url, params, false, "");
                 HashMap<String, Object> map = new HashMap<String, Object>();
                 map.put("response", response);
                 map.put("handler", handler);
@@ -153,12 +153,12 @@ public final class XXHttpConnection {
         @Override
         public void handleMessage(Message msg) {
             HashMap<String, Object> map = (HashMap<String, Object>) msg.obj;
-            XXResponse response = (XXResponse) map.get("response");
-            XXResponseHandler handler = (XXResponseHandler) map.get("handler");
+            Response response = (Response) map.get("response");
+            ResponseHandler handler = (ResponseHandler) map.get("handler");
 
             if (handlers.containsKey(response.url)) {
-                ArrayList<XXResponseHandler> handlerList = handlers.get(response.url);
-                for (XXResponseHandler thandler : handlerList) {
+                ArrayList<ResponseHandler> handlerList = handlers.get(response.url);
+                for (ResponseHandler thandler : handlerList) {
                     thandler.handleResponse(response);
                 }
             }

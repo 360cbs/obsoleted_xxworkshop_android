@@ -13,13 +13,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-public final class XXSystem {
+public final class System {
     public final static String getDeviceId(Context context) {
         return Installation.getID(context).toUpperCase();
     }
 
     public final static double getTimeStamp() {
-        return System.currentTimeMillis() / 1000.0;
+        return java.lang.System.currentTimeMillis() / 1000.0;
     }
 
     public final static String getDeviceInfo(Context context) {
@@ -51,7 +51,7 @@ public final class XXSystem {
         return null;
     }
 
-//    Toast.makeText(MainActivity.this, XXSystem.getSystemProperty("ro.miui.ui.version.name"), 3000).show();
+//    Toast.makeText(MainActivity.this, System.getSystemProperty("ro.miui.ui.version.name"), 3000).show();
     public final static String getSystemProperty(String propName) {
         String line;
         BufferedReader input = null;
@@ -61,14 +61,14 @@ public final class XXSystem {
             line = input.readLine();
             input.close();
         } catch (IOException ex) {
-            XXLog.log("Unable to read sysprop " + propName);
+            L.log("Unable to read sysprop " + propName);
             return null;
         } finally {
             if (input != null) {
                 try {
                     input.close();
                 } catch (IOException e) {
-                    XXLog.log("Exception while closing InputStream");
+                    L.log("Exception while closing InputStream");
                 }
             }
         }

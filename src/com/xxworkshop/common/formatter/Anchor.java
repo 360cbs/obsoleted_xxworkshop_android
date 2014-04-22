@@ -4,7 +4,7 @@
  */
 package com.xxworkshop.common.formatter;
 
-public enum XXAnchor {
+public enum Anchor {
     LeftTop,
     CenterTop,
     RightTop,

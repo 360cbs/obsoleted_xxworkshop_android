@@ -5,6 +5,6 @@
 
 package com.xxworkshop.network;
 
-public interface XXResponseHandler {
-    public void handleResponse(XXResponse response);
+public interface ResponseHandler {
+    public void handleResponse(Response response);
 }
