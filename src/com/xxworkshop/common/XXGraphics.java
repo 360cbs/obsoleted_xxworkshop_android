@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2012, Converger Co.,ltd..
- * All rights reserved.
+ * Copyright (c) 2014 xxworkshop. All rights reserved.
+ * Created by Broche Xu on 3/31/14 7:42 PM.
  */
 
 package com.xxworkshop.common;
@@ -9,9 +9,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.view.View;
 
-/**
- * Created by brochexu on 3/31/14.
- */
 public final class XXGraphics {
     public final static Bitmap view2Bitmap(View view) {
         Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);

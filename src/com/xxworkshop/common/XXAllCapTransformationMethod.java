@@ -1,15 +1,12 @@
 /*
- * Copyright (c) 2012, Converger Co.,ltd..
- * All rights reserved.
+ * Copyright (c) 2014 xxworkshop. All rights reserved.
+ * Created by Broche Xu on 4/22/14 5:42 PM.
  */
 
 package com.xxworkshop.common;
 
 import android.text.method.ReplacementTransformationMethod;
 
-/**
- * Created by brochexu on 4/8/14.
- */
 public final class XXAllCapTransformationMethod extends ReplacementTransformationMethod {
     @Override
     protected char[] getOriginal() {

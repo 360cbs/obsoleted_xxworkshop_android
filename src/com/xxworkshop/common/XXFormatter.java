@@ -6,11 +6,12 @@
 package com.xxworkshop.common;
 
 import android.util.Base64;
+import com.xxworkshop.common.formatter.XXAnchor;
+import com.xxworkshop.common.formatter.XXRect;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -97,5 +98,44 @@ public final class XXFormatter {
         sdf.setCalendar(Calendar.getInstance(TimeZone.getTimeZone("Asia/Shanghai")));
         long ltimestamp = (long) (timestamp * 1000);
         return sdf.format(new Date(ltimestamp));
+    }
+
+
+    public final static XXRect convertRect(XXRect origin, XXAnchor anchor) {
+        XXRect rect = new XXRect();
+        rect.w = origin.w;
+        rect.h = origin.h;
+        if (anchor == XXAnchor.LeftTop) {
+            rect.x = origin.x;
+            rect.y = origin.y;
+        } else if (anchor == XXAnchor.CenterTop) {
+            rect.x = origin.x - origin.w / 2;
+            rect.y = origin.y;
+        } else if (anchor == XXAnchor.RightTop) {
+            rect.x = origin.x - origin.w;
+            rect.y = origin.y;
+        } else if (anchor == XXAnchor.LeftCenter) {
+            rect.x = origin.x;
+            rect.y = origin.y - origin.h / 2;
+        } else if (anchor == XXAnchor.Center) {
+            rect.x = origin.x - origin.w / 2;
+            rect.y = origin.y - origin.h / 2;
+        } else if (anchor == XXAnchor.RightCenter) {
+            rect.x = origin.x - origin.w;
+            rect.y = origin.y - origin.h / 2;
+        } else if (anchor == XXAnchor.LeftBottom) {
+            rect.x = origin.x;
+            rect.y = origin.y - origin.h;
+        } else if (anchor == XXAnchor.CenterBottom) {
+            rect.x = origin.x - origin.w / 2;
+            rect.y = origin.y - origin.h;
+        } else if (anchor == XXAnchor.RightBottom) {
+            rect.x = origin.x - origin.w;
+            rect.y = origin.y - origin.h;
+        } else {
+            rect.x = origin.x;
+            rect.y = origin.y;
+        }
+        return rect;
     }
 }
