@@ -13,7 +13,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-public final class System {
+public final class S {
     public final static String getDeviceId(Context context) {
         return Installation.getID(context).toUpperCase();
     }
@@ -51,7 +51,7 @@ public final class System {
         return null;
     }
 
-//    Toast.makeText(MainActivity.this, System.getSystemProperty("ro.miui.ui.version.name"), 3000).show();
+//    Toast.makeText(MainActivity.this, S.getSystemProperty("ro.miui.ui.version.name"), 3000).show();
     public final static String getSystemProperty(String propName) {
         String line;
         BufferedReader input = null;

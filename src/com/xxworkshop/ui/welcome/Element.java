@@ -9,7 +9,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import com.xxworkshop.common.Formatter;
+import com.xxworkshop.common.F;
 import com.xxworkshop.common.formatter.Rect;
 
 import java.util.Hashtable;
@@ -56,7 +56,7 @@ public abstract class Element {
         imageView.setImageResource(getResId());
         imageView.setAlpha(state.a);
 
-        Rect rect = Formatter.convertRect(new Rect(state.x, state.y, state.w, state.h), state.anchor);
+        Rect rect = F.convertRect(new Rect(state.x, state.y, state.w, state.h), state.anchor);
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(rect.w, rect.h);
         layoutParams.leftMargin = rect.x;
         layoutParams.topMargin = rect.y;
@@ -114,8 +114,8 @@ public abstract class Element {
             return;
         }
 
-        Rect startRect = Formatter.convertRect(new Rect(startState.x, startState.y, startState.w, startState.h), startState.anchor);
-        Rect endRect = Formatter.convertRect(new Rect(endState.x, endState.y, endState.w, endState.h), endState.anchor);
+        Rect startRect = F.convertRect(new Rect(startState.x, startState.y, startState.w, startState.h), startState.anchor);
+        Rect endRect = F.convertRect(new Rect(endState.x, endState.y, endState.w, endState.h), endState.anchor);
 
         float ox = 0;
         float oy = 0;
@@ -200,7 +200,7 @@ public abstract class Element {
 
         @Override
         public void handleMessage(Message msg) {
-            Rect endRect = Formatter.convertRect(new Rect(endState.x, endState.y, endState.w, endState.h), endState.anchor);
+            Rect endRect = F.convertRect(new Rect(endState.x, endState.y, endState.w, endState.h), endState.anchor);
             FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) imageView.getLayoutParams();
 
             int ox = (int) ((endRect.x - currentState.x) / 3.0f);

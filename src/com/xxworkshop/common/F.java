@@ -20,7 +20,7 @@ import java.util.TimeZone;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-public final class Formatter {
+public final class F {
     public final static String map2String(Map data, String itemSplitter, String sectionSplitter) {
         StringBuffer sb = new StringBuffer();
         for (Object key : data.keySet()) {

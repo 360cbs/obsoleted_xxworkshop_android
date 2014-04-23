@@ -7,7 +7,7 @@ package com.xxworkshop.network;
 
 import android.os.Handler;
 import android.os.Message;
-import com.xxworkshop.common.Formatter;
+import com.xxworkshop.common.F;
 import com.xxworkshop.common.L;
 
 import java.io.*;
@@ -83,7 +83,7 @@ public final class HttpConnection {
         @Override
         public void run() {
             String surl = Host + url;
-            String sparams = Formatter.map2String(params, "=", "&");
+            String sparams = F.map2String(params, "=", "&");
 
             try {
                 HttpURLConnection connection;
