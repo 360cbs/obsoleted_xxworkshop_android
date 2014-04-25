@@ -26,7 +26,7 @@ public abstract class WelcomeActivityBase extends Activity {
      * Called when the activity is first created.
      */
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(getLayoutResId());
 
@@ -50,6 +50,28 @@ public abstract class WelcomeActivityBase extends Activity {
     protected abstract void initElements(List<Element> elements, FrameLayout parentView);
 
     public abstract void OnLastPageFinish();
+
+    public void forward() {
+        if (step == getStepCount() - 1) {
+            OnLastPageFinish();
+        } else {
+            for (Element element : elements) {
+                element.forward(step);
+            }
+            step++;
+            step = step > (getStepCount() - 1) ? (getStepCount() - 1) : step;
+        }
+    }
+
+    public void backward() {
+        if (step != 0) {
+            for (Element element : elements) {
+                element.backward(step);
+            }
+            step--;
+            step = step < 0 ? 0 : step;
+        }
+    }
 
     private class RootTouchListener implements View.OnTouchListener {
         private float startX;
@@ -83,23 +105,9 @@ public abstract class WelcomeActivityBase extends Activity {
                         float x = motionEvent.getX();
                         float deltaX = x - startX;
                         if (deltaX < -100) {
-                            if (step == getStepCount() - 1) {
-                                OnLastPageFinish();
-                            } else {
-                                for (Element element : elements) {
-                                    element.forward(step);
-                                }
-                                step++;
-                                step = step > (getStepCount() - 1) ? (getStepCount() - 1) : step;
-                            }
+                            forward();
                         } else if (deltaX > 100) {
-                            if (step != 0) {
-                                for (Element element : elements) {
-                                    element.backward(step);
-                                }
-                                step--;
-                                step = step < 0 ? 0 : step;
-                            }
+                            backward();
                         } else {
                             for (Element element : elements) {
                                 element.reset(step);

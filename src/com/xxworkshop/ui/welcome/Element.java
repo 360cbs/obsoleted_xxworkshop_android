@@ -4,18 +4,18 @@
  */
 package com.xxworkshop.ui.welcome;
 
-import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import com.xxworkshop.common.F;
 import com.xxworkshop.common.formatter.Rect;
+import com.xxworkshop.ui.WelcomeActivityBase;
 
 import java.util.Hashtable;
 
 public abstract class Element {
-    protected Context context;
+    protected WelcomeActivityBase context;
     protected FrameLayout parentView;
     protected ImageView imageView;
 
@@ -23,7 +23,7 @@ public abstract class Element {
     private TransformHelper transformHelper = null;
     private ElementState currentState = new ElementState();
 
-    public Element(Context context, FrameLayout parent) {
+    public Element(WelcomeActivityBase context, FrameLayout parent) {
         this.context = context;
         this.parentView = parent;
         initStates();
@@ -86,6 +86,14 @@ public abstract class Element {
 
     protected int getDimension(int resId) {
         return (int) context.getResources().getDimension(resId);
+    }
+
+    protected void forward() {
+        context.forward();
+    }
+
+    protected void backward() {
+        context.backward();
     }
 
     public ImageView getView() {
