@@ -7,7 +7,6 @@ package com.xxworkshop.common;
 
 import android.content.Context;
 import android.text.TextUtils;
-import com.lurencun.cfuture09.androidkit.utils.lang.Installation;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,7 +14,26 @@ import java.io.InputStreamReader;
 
 public final class S {
     public final static String getDeviceId(Context context) {
-        return Installation.getID(context).toUpperCase();
+        android.telephony.TelephonyManager tm = (android.telephony.TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+
+        String device_id = tm.getDeviceId();
+
+        android.net.wifi.WifiManager wifi = (android.net.wifi.WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+
+        String mac = wifi.getConnectionInfo().getMacAddress();
+
+        if (TextUtils.isEmpty(device_id)) {
+            device_id = mac;
+        }
+
+        if (TextUtils.isEmpty(device_id)) {
+            device_id = android.provider.Settings.Secure.getString(context.getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
+        }
+
+        if (TextUtils.isEmpty(device_id)) {
+            device_id = Installation.getID(context);
+        }
+        return device_id;
     }
 
     public final static double getTimeStamp() {
@@ -25,23 +43,12 @@ public final class S {
     public final static String getDeviceInfo(Context context) {
         try {
             org.json.JSONObject json = new org.json.JSONObject();
-            android.telephony.TelephonyManager tm = (android.telephony.TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-
-            String device_id = tm.getDeviceId();
 
             android.net.wifi.WifiManager wifi = (android.net.wifi.WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-
             String mac = wifi.getConnectionInfo().getMacAddress();
             json.put("mac", mac);
 
-            if (TextUtils.isEmpty(device_id)) {
-                device_id = mac;
-            }
-
-            if (TextUtils.isEmpty(device_id)) {
-                device_id = android.provider.Settings.Secure.getString(context.getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
-            }
-
+            String device_id = getDeviceId(context);
             json.put("device_id", device_id);
 
             return json.toString();
@@ -51,7 +58,7 @@ public final class S {
         return null;
     }
 
-//    Toast.makeText(MainActivity.this, S.getSystemProperty("ro.miui.ui.version.name"), 3000).show();
+    //    Toast.makeText(MainActivity.this, S.getSystemProperty("ro.miui.ui.version.name"), 3000).show();
     public final static String getSystemProperty(String propName) {
         String line;
         BufferedReader input = null;
