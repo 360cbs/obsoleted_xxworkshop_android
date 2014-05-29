@@ -85,25 +85,40 @@ public abstract class DataManagerBase extends SQLiteOpenHelper {
     }
 
     public void execute(String sql) {
-        SQLiteDatabase dbw = this.getWritableDatabase();
-        dbw.execSQL(sql);
-        dbw.close();
+        execute(getWritableDatabase(), sql);
+    }
+
+    public void execute(SQLiteDatabase database, String sql) {
+        database.execSQL(sql);
+        database.close();
+    }
+
+    public void executeBatch(List<String> sqls) {
+        executeBatch(getWritableDatabase(), sqls, null);
+    }
+
+    public void executeBatch(SQLiteDatabase database, List<String> sqls) {
+        executeBatch(database, sqls, null);
     }
 
     public void executeBatch(List<String> sqls, List<String[]> args) {
-        SQLiteDatabase dbw = this.getWritableDatabase();
-        dbw.beginTransaction();
+        executeBatch(getWritableDatabase(), sqls, args);
+    }
+
+    public void executeBatch(SQLiteDatabase database, List<String> sqls, List<String[]> args) {
+        database.beginTransaction();
         for (int i = 0; i <= sqls.size() - 1; i++) {
             String sql = sqls.get(i);
-            String[] arg = args.get(i);
-            if (arg != null) {
-                dbw.execSQL(sql, arg);
+            if (args == null) {
+                database.execSQL(sql);
+            } else if (args.get(i) != null) {
+                database.execSQL(sql, args.get(i));
             } else {
-                dbw.execSQL(sql);
+                database.execSQL(sql);
             }
         }
-        dbw.setTransactionSuccessful();
-        dbw.endTransaction();
-        dbw.close();
+        database.setTransactionSuccessful();
+        database.endTransaction();
+        database.close();
     }
 }

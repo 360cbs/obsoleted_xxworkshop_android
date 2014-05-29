@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Message;
 import com.xxworkshop.common.F;
 import com.xxworkshop.common.L;
+import com.xxworkshop.common.S;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -20,6 +21,8 @@ import java.util.Hashtable;
 public final class HttpConnection {
     public static String Host = "";
     public static boolean Debug = true;
+    public static int DefaultCacheTimeout = 10;
+
     private MessageHandler messageHandler = new MessageHandler();
 
     private static HttpConnection instance = new HttpConnection();
@@ -34,18 +37,37 @@ public final class HttpConnection {
         handlers = new Hashtable<String, ArrayList<ResponseHandler>>();
     }
 
+    private Hashtable<String, CacheItem> caches = new Hashtable<String, CacheItem>(50);
+
     public void sendRequest(String url, Hashtable<String, String> params) {
-        sendRequest(url, params, HttpMethod.Get, null);
+        sendRequest(url, params, HttpMethod.Get, null, false, 0);
     }
 
     public void sendRequest(String url, Hashtable<String, String> params, ResponseHandler handler) {
-        sendRequest(url, params, HttpMethod.Get, handler);
+        sendRequest(url, params, HttpMethod.Get, handler, false, 0);
     }
 
-    public void sendRequest(String url, Hashtable<String, String> params, String method, ResponseHandler handler) {
-        XXHttpThread thread = new XXHttpThread(url, params, method, handler);
+    public void sendRequest(String url, Hashtable<String, String> params, boolean useCache) {
+        int cacheTimeout = 0;
+        if (useCache) {
+            cacheTimeout = DefaultCacheTimeout;
+        }
+        sendRequest(url, params, HttpMethod.Get, null, useCache, cacheTimeout);
+    }
+
+    public void sendRequest(String url, Hashtable<String, String> params, ResponseHandler handler, boolean useCache) {
+        int cacheTimeout = 0;
+        if (useCache) {
+            cacheTimeout = DefaultCacheTimeout;
+        }
+        sendRequest(url, params, HttpMethod.Get, handler, useCache, cacheTimeout);
+    }
+
+    public void sendRequest(String url, Hashtable<String, String> params, String method, ResponseHandler handler, boolean useCache, int cacheTimeout) {
+        XXHttpThread thread = new XXHttpThread(url, params, method, handler, useCache, cacheTimeout);
         thread.start();
     }
+
 
     public void addResponseHandler(ResponseHandler handler, String url) {
         if (handlers.containsKey(url)) {
@@ -67,23 +89,51 @@ public final class HttpConnection {
         }
     }
 
-    class XXHttpThread extends Thread {
+    private class XXHttpThread extends Thread {
         private String url;
         private Hashtable<String, String> params;
         private String method;
         private ResponseHandler handler;
+        private boolean useCache;
+        private int cacheTimeout;
 
-        public XXHttpThread(String url, Hashtable<String, String> params, String method, ResponseHandler handler) {
+        public XXHttpThread(String url, Hashtable<String, String> params, String method, ResponseHandler handler, boolean useCache, int cacheTimeout) {
             this.url = url;
             this.params = params;
             this.method = method;
             this.handler = handler;
+            this.useCache = useCache;
+            this.cacheTimeout = cacheTimeout;
         }
 
         @Override
         public void run() {
             String surl = Host + url;
             String sparams = F.map2String(params, "=", "&");
+
+            if (Debug) {
+                L.log("==========>\nurl: " + surl + "\nparams: " + sparams + "\nmethod: " + method);
+            }
+
+            String cacheKey = surl + "?" + sparams;
+            if (useCache) {
+                if (caches.containsKey(cacheKey)) {
+                    CacheItem ci = caches.get(cacheKey);
+                    if (S.getTimeStamp() - ci.timestamp <= cacheTimeout) {
+                        if (Debug) {
+                            L.log("<==========\nresult(cache): " + ci.content);
+                        }
+                        Response response = new Response(url, params, true, ci.content);
+                        HashMap<String, Object> map = new HashMap<String, Object>();
+                        map.put("response", response);
+                        map.put("handler", handler);
+                        Message message = Message.obtain();
+                        message.obj = map;
+                        messageHandler.sendMessage(message);
+                        return;
+                    }
+                }
+            }
 
             try {
                 HttpURLConnection connection;
@@ -112,9 +162,6 @@ public final class HttpConnection {
                     connection.setRequestMethod(method);
                     connection.connect();
                 }
-                if (Debug) {
-                    L.log("==========>\nurl: " + surl + "\nparams: " + sparams + "\nmethod: " + method);
-                }
 
                 BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
                 String line = null;
@@ -127,6 +174,18 @@ public final class HttpConnection {
                 connection.disconnect();
                 if (Debug) {
                     L.log("<==========\nresult: " + sb.toString());
+                }
+
+                // cache
+                if (caches.containsKey(cacheKey)) {
+                    CacheItem ci = caches.get(cacheKey);
+                    ci.content = sb.toString();
+                    ci.timestamp = S.getTimeStamp();
+                } else {
+                    CacheItem ci = new CacheItem();
+                    ci.content = sb.toString();
+                    ci.timestamp = S.getTimeStamp();
+                    caches.put(cacheKey, ci);
                 }
 
                 Response response = new Response(url, params, true, sb.toString());
@@ -149,7 +208,7 @@ public final class HttpConnection {
         }
     }
 
-    class MessageHandler extends Handler {
+    private class MessageHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
             HashMap<String, Object> map = (HashMap<String, Object>) msg.obj;
@@ -166,5 +225,10 @@ public final class HttpConnection {
                 handler.handleResponse(response);
             }
         }
+    }
+
+    private class CacheItem {
+        public double timestamp;
+        public String content;
     }
 }

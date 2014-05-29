@@ -6,6 +6,8 @@
 package com.xxworkshop.common;
 
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.text.TextUtils;
 
 import java.io.BufferedReader;
@@ -34,6 +36,24 @@ public final class S {
             device_id = Installation.getID(context);
         }
         return device_id;
+    }
+
+    public final static String getVersionName(Context context) {
+        try {
+            PackageInfo pi = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            return pi.versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            return "";
+        }
+    }
+
+    public static int getVersionCode(Context context) {
+        try {
+            PackageInfo pi = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            return pi.versionCode;
+        } catch (PackageManager.NameNotFoundException e) {
+            return 0;
+        }
     }
 
     public final static double getTimeStamp() {
