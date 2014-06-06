@@ -8,15 +8,15 @@ package com.xxworkshop.common;
 import android.util.Base64;
 import com.xxworkshop.common.formatter.Anchor;
 import com.xxworkshop.common.formatter.Rect;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Map;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -137,5 +137,51 @@ public final class F {
             rect.y = origin.y;
         }
         return rect;
+    }
+
+    public final static JSONObject hashtable2JsonObject(Hashtable<String, String> hashtable) {
+        JSONObject jsonObject = new JSONObject();
+        try {
+            for (String key : hashtable.keySet()) {
+                jsonObject.put(key, hashtable.get(key));
+            }
+        } catch (JSONException e) {
+            return new JSONObject();
+        }
+        return jsonObject;
+    }
+
+    public final static Hashtable<String, String> jsonObject2Hashtable(JSONObject jsonObject) {
+        Hashtable<String, String> hashtable = new Hashtable<String, String>();
+        try {
+            Iterator<String> iterator = jsonObject.keys();
+            while (iterator.hasNext()) {
+                String key = iterator.next();
+                hashtable.put(key, jsonObject.getString(key));
+            }
+        } catch (JSONException e) {
+            return new Hashtable<String, String>();
+        }
+        return hashtable;
+    }
+
+    public final static JSONArray list2JsonArray(List<Hashtable<String, String>> list) {
+        JSONArray jsonArray = new JSONArray();
+        for (Hashtable<String, String> hashtable : list) {
+            jsonArray.put(hashtable2JsonObject(hashtable));
+        }
+        return jsonArray;
+    }
+
+    public final static List<Hashtable<String, String>> jsonArray2List(JSONArray jsonArray) {
+        List<Hashtable<String, String>> list = new ArrayList<Hashtable<String, String>>();
+        for (int i = 0; i <= jsonArray.length() - 1; i++) {
+            try {
+                list.add(jsonObject2Hashtable(jsonArray.getJSONObject(i)));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+        return list;
     }
 }

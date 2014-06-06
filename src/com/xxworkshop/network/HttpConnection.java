@@ -22,6 +22,7 @@ public final class HttpConnection {
     public static String Host = "";
     public static boolean Debug = true;
     public static int DefaultCacheTimeout = 10;
+    public static boolean SessionEnabled = true;
 
     private MessageHandler messageHandler = new MessageHandler();
 
@@ -39,6 +40,8 @@ public final class HttpConnection {
 
     private Hashtable<String, CacheItem> caches = new Hashtable<String, CacheItem>(50);
 
+    private String cookie = "";
+
     public void sendRequest(String url, Hashtable<String, String> params) {
         sendRequest(url, params, HttpMethod.Get, null, false, 0);
     }
@@ -55,11 +58,19 @@ public final class HttpConnection {
         sendRequest(url, params, HttpMethod.Get, null, useCache, cacheTimeout);
     }
 
+    public void sendRequest(String url, Hashtable<String, String> params, boolean useCache, int cacheTimeout) {
+        sendRequest(url, params, HttpMethod.Get, null, useCache, cacheTimeout);
+    }
+
     public void sendRequest(String url, Hashtable<String, String> params, ResponseHandler handler, boolean useCache) {
         int cacheTimeout = 0;
         if (useCache) {
             cacheTimeout = DefaultCacheTimeout;
         }
+        sendRequest(url, params, HttpMethod.Get, handler, useCache, cacheTimeout);
+    }
+
+    public void sendRequest(String url, Hashtable<String, String> params, ResponseHandler handler, boolean useCache, int cacheTimeout) {
         sendRequest(url, params, HttpMethod.Get, handler, useCache, cacheTimeout);
     }
 
@@ -112,7 +123,7 @@ public final class HttpConnection {
             String sparams = F.map2String(params, "=", "&");
 
             if (Debug) {
-                L.log("==========>\nurl: " + surl + "\nparams: " + sparams + "\nmethod: " + method);
+                L.log("==========>\nurl: " + surl + "\nparams: " + sparams + "\ncookie: " + cookie + "\nmethod: " + method);
             }
 
             String cacheKey = surl + "?" + sparams;
@@ -144,6 +155,9 @@ public final class HttpConnection {
                     connection.setRequestMethod(method);
                     connection.setConnectTimeout(5000);
                     connection.setReadTimeout(10000);
+                    if (SessionEnabled && !cookie.equals("")) {
+                        connection.setRequestProperty("Cookie", cookie);
+                    }
                     connection.connect();
 
                     OutputStream os = connection.getOutputStream();
@@ -160,7 +174,17 @@ public final class HttpConnection {
                     connection.setConnectTimeout(5000);
                     connection.setReadTimeout(10000);
                     connection.setRequestMethod(method);
+                    if (SessionEnabled && !cookie.equals("")) {
+                        connection.setRequestProperty("Cookie", cookie);
+                    }
                     connection.connect();
+                }
+
+                if (SessionEnabled) {
+                    String tcookie = connection.getHeaderField("Set-Cookie");
+                    if (tcookie != null && !tcookie.equals("")) {
+                        cookie = tcookie;
+                    }
                 }
 
                 BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
@@ -172,9 +196,6 @@ public final class HttpConnection {
                 }
                 br.close();
                 connection.disconnect();
-                if (Debug) {
-                    L.log("<==========\nresult: " + sb.toString());
-                }
 
                 // cache
                 if (caches.containsKey(cacheKey)) {
