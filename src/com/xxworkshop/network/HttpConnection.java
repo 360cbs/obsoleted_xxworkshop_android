@@ -197,6 +197,10 @@ public final class HttpConnection {
                 br.close();
                 connection.disconnect();
 
+                if (Debug) {
+                    L.log("<==========\nresult: " + sb.toString());
+                }
+
                 // cache
                 if (caches.containsKey(cacheKey)) {
                     CacheItem ci = caches.get(cacheKey);
