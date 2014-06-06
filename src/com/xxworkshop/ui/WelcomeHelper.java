@@ -16,21 +16,24 @@ import com.xxworkshop.ui.welcome.Element;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class WelcomeActivityBase extends Activity {
+public abstract class WelcomeHelper {
+    protected Activity activity;
     private RootTouchListener rootTouchListener = new RootTouchListener();
     private FrameLayout root;
     private int step = 0;
     private List<Element> elements = new ArrayList<Element>();
 
+    public WelcomeHelper(Activity activity) {
+        this.activity = activity;
+    }
+
     /**
      * Called when the activity is first created.
      */
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(getLayoutResId());
+    public void onCreate() {
+        activity.setContentView(getLayoutResId());
 
-        root = (FrameLayout) findViewById(getRootViewId());
+        root = (FrameLayout) activity.findViewById(getRootViewId());
         new Handler() {
             @Override
             public void handleMessage(Message msg) {
