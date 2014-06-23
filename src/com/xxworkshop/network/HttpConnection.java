@@ -14,6 +14,7 @@ import com.xxworkshop.common.S;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -168,7 +169,12 @@ public final class HttpConnection {
                     os.close();
                     osw.close();
                 } else {
-                    connection = (HttpURLConnection) (new URL(surl + "?" + sparams)).openConnection();
+                    for (String key : params.keySet()) {
+                        params.put(key, URLEncoder.encode(params.get(key)));
+                    }
+                    sparams = F.map2String(params, "=", "&");
+                    String fullurl = surl + "?" + sparams;
+                    connection = (HttpURLConnection) (new URL(fullurl)).openConnection();
                     connection.setDoInput(true);
                     connection.setDoOutput(true);
                     connection.setConnectTimeout(5000);

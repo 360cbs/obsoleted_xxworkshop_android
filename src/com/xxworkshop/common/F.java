@@ -12,9 +12,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
@@ -85,8 +90,59 @@ public final class F {
         return Base64.encode(data, Base64.DEFAULT);
     }
 
+    public final static byte[] base64Encode(byte[] data, int flags) {
+        return Base64.encode(data, flags);
+    }
+
     public final static byte[] base64Decode(byte[] data) {
         return Base64.decode(data, Base64.DEFAULT);
+    }
+
+    public final static byte[] base64Decode(byte[] data, int flags) {
+        return Base64.decode(data, flags);
+    }
+
+    private final static String HMAC_SHA1 = "HmacSHA1";
+
+    public final static byte[] hmacSHA1(byte[] data, byte[] key) {
+        SecretKeySpec signingKey = new SecretKeySpec(key, HMAC_SHA1);
+        try {
+            Mac mac = Mac.getInstance(HMAC_SHA1);
+            mac.init(signingKey);
+            byte[] rawHmac = mac.doFinal(data);
+            return rawHmac;
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return new byte[0];
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+            return new byte[0];
+        }
+    }
+
+    private final static char hexDigits[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
+    public final static String md5(byte[] data) {
+
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            md.update(data);
+            byte[] result = md.digest();
+            return new String(bytes2String(result));
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    public final static String bytes2String(byte[] data) {
+        char[] c = new char[data.length * 2];
+        for (int i = 0; i <= data.length - 1; i++) {
+            byte b = data[i];
+            c[i * 2] = hexDigits[b >> 4 & 0xF];
+            c[i * 2 + 1] = hexDigits[b & 0xF];
+        }
+        return new String(c);
     }
 
     public final static byte[] zipAndBaseEncode2(byte[] data) {

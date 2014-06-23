@@ -7,7 +7,9 @@ package com.xxworkshop.common;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.view.View;
+import com.xxworkshop.common.formatter.Rect;
 
 public final class Graphics {
     public final static Bitmap view2Bitmap(View view) {
@@ -26,5 +28,31 @@ public final class Graphics {
         canvas.save(Canvas.ALL_SAVE_FLAG);
         canvas.restore();
         return originBitmap;
+    }
+
+    public static Bitmap cutImage(Bitmap bitmap, Rect rect) {
+        if (bitmap != null) {
+            int bWidth = bitmap.getWidth();
+            int bHeight = bitmap.getHeight();
+            if (rect.x >= 0 && rect.y >= 0 && rect.x + rect.w <= bWidth && rect.y + rect.h <= bHeight) {
+                Bitmap mBitmap = Bitmap.createBitmap(bitmap, rect.x, rect.y, rect.w, rect.y);
+                return mBitmap;
+            }
+        }
+        return null;
+    }
+
+    public static Bitmap zoomImage(Bitmap bitmap, float destWidth, float destHeight) {
+        if (bitmap != null && destWidth > 0 && destHeight > 0) {
+            int oldWidth = bitmap.getWidth();
+            int oldHeight = bitmap.getHeight();
+            Matrix matrix = new Matrix();
+            float widthScale = destWidth / oldWidth;
+            float heightScale = destHeight / oldHeight;
+            matrix.postScale(widthScale, heightScale);
+            Bitmap mBitmap = Bitmap.createBitmap(bitmap, 0, 0, oldWidth, oldHeight, matrix, true);
+            return mBitmap;
+        }
+        return null;
     }
 }
