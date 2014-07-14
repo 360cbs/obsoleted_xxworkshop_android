@@ -240,4 +240,44 @@ public final class F {
         }
         return list;
     }
+
+    public static String time2String(double timestamp) {
+        double timeInterval = S.getTimeStamp() - timestamp;
+        if (timeInterval < 60) {
+            return "1分钟内";
+        } else if (timeInterval < 3600) {//1小时内
+            return timeInterval / 60 + "分钟前";
+        } else if (timeInterval < 3600 * 24) {//24小时内
+            return timeInterval / 3600 + "小时前";
+        } else if (timeInterval < 3600 * 24 * 2) {
+            return "昨天";
+        } else if (timeInterval < 3600 * 24 * 3) {
+            return "2天前";
+        } else if (timeInterval < 3600 * 24 * 4) {
+            return "3天前";
+        } else if (timeInterval < 3600 * 24 * 5) {
+            return "4天前";
+        } else if (timeInterval < 3600 * 24 * 6) {
+            return "5天前";
+        } else if (timeInterval < 3600 * 24 * 7) {
+            return "6天前";
+        } else if (timeInterval < 3600 * 24 * 15) {
+            return "1周前";
+        } else if (timeInterval < 3600 * 24 * 16) {
+            return "2周前";
+        } else if (timeInterval < 3600 * 24 * 31) {
+            return "半月前";
+        } else {
+            Integer year1 = Integer.parseInt(new SimpleDateFormat("yyyy").format(new Date()));
+            Integer year2 = Integer.parseInt(F.double2Date(timestamp, "yyyy"));
+            Integer month1 = Integer.parseInt(new SimpleDateFormat("MM").format(new Date()));
+            Integer month2 = Integer.parseInt(F.double2Date(timestamp, "MM"));
+            int monthCount = (year1 - year2 - 1) * 12 + (12 - month2) + month1;
+            if (monthCount / 12 > 0) {
+                return monthCount / 12 + "年前";
+            } else {
+                return monthCount + "月前";
+            }
+        }
+    }
 }
