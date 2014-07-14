@@ -246,9 +246,9 @@ public final class F {
         if (timeInterval < 60) {
             return "1分钟内";
         } else if (timeInterval < 3600) {//1小时内
-            return timeInterval / 60 + "分钟前";
+            return (int) timeInterval / 60 + "分钟前";
         } else if (timeInterval < 3600 * 24) {//24小时内
-            return timeInterval / 3600 + "小时前";
+            return (int) timeInterval / 3600 + "小时前";
         } else if (timeInterval < 3600 * 24 * 2) {
             return "昨天";
         } else if (timeInterval < 3600 * 24 * 3) {
