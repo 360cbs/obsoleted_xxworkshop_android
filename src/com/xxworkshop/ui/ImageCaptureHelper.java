@@ -6,10 +6,8 @@ import android.graphics.Matrix;
 import android.graphics.PointF;
 import android.os.Handler;
 import android.os.Message;
-import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
@@ -19,10 +17,9 @@ import com.xxworkshop.common.L;
 import com.xxworkshop.common.formatter.Anchor;
 import com.xxworkshop.common.formatter.Rect;
 import com.xxworkshop.ui.imagecapture.FocusView;
-import com.xxworkshop.ui.imagecapture.ImageCaptureListener;
 
 
-public class ImageCaptureHelper implements View.OnTouchListener {
+public class ImageCaptureHelper {
     /**
      * 拖动模式
      */
@@ -45,8 +42,6 @@ public class ImageCaptureHelper implements View.OnTouchListener {
     private Rect rect;
 
     private Bitmap bitmap = null;
-
-    private ImageCaptureListener listener;
 
     private Matrix mMatrix = new Matrix();
     private Matrix mSavedMatrix = new Matrix();
@@ -102,9 +97,8 @@ public class ImageCaptureHelper implements View.OnTouchListener {
 //	MSCALE_X	MSKEW_X		MTRANS_X
 //	MSKEW_Y		MSCALE_Y	MTRANS_Y
 //	MPERSP_0	MPERSP_1	MPERSP_2	
-    public ImageCaptureHelper(Context context, FrameLayout rootView, ImageCaptureListener listener) {
+    public ImageCaptureHelper(Context context, FrameLayout rootView) {
         imageView = new ImageView(context);
-        this.listener = listener;
 
         rootView.addView(imageView, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -114,49 +108,22 @@ public class ImageCaptureHelper implements View.OnTouchListener {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
 
-        Button buttonSubmit = new Button(context);
-        buttonSubmit.setText("OK");
-        buttonSubmit.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ImageCaptureHelper.this.listener.onCapture(capture());
-            }
-        });
-        FrameLayout.LayoutParams lpSubmit = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
-        lpSubmit.gravity = Gravity.LEFT | Gravity.BOTTOM;
-        lpSubmit.leftMargin = 10;
-        lpSubmit.rightMargin = 10;
-        rootView.addView(buttonSubmit, lpSubmit);
-
-        Button buttonCancel = new Button(context);
-        buttonCancel.setText("Cancel");
-        buttonCancel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ImageCaptureHelper.this.listener.onCancel();
-            }
-        });
-        FrameLayout.LayoutParams lpCancel = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
-        lpCancel.gravity = Gravity.RIGHT | Gravity.BOTTOM;
-        lpCancel.rightMargin = 10;
-        lpCancel.bottomMargin = 10;
-        rootView.addView(buttonCancel, lpCancel);
-
-
-        imageView.setOnTouchListener(this);
+        imageView.setOnTouchListener(new OnTouchListener());
     }
 
-    public void setRect(Rect rect, Anchor anchor) {
+    public ImageCaptureHelper setRect(Rect rect, Anchor anchor) {
         focusView.init(rect, anchor);
         this.rect = F.convertRect(rect, anchor);
+        return this;
     }
 
-    public void setImage(Bitmap bitmap) {
+    public ImageCaptureHelper setImage(Bitmap bitmap) {
         this.bitmap = bitmap;
         imageView.setScaleType(ScaleType.FIT_CENTER);
         imageView.setImageBitmap(bitmap);
         mMatrix.set(imageView.getImageMatrix());
         mMatrix.getValues(mMatrixValues);
+        return this;
     }
 
     /**
@@ -229,32 +196,6 @@ public class ImageCaptureHelper implements View.OnTouchListener {
         point.set(x / 2, y / 2);
     }
 
-    @Override
-    public boolean onTouch(View v, MotionEvent event) {
-        switch (event.getAction() & MotionEvent.ACTION_MASK) {
-            case MotionEvent.ACTION_DOWN:
-                actionDown(event);
-                break;
-            case MotionEvent.ACTION_POINTER_DOWN:
-                actionPointerDown(event);
-                break;
-            case MotionEvent.ACTION_MOVE:
-                actionMove(event);
-                break;
-            case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_POINTER_UP:
-                mMode = MODE_NONE;
-                mMatrix.getValues(mMatrixValues);
-                L.log("MSCALE_X = " + mMatrixValues[0] + "; MSKEW_X = " + mMatrixValues[1] + "; MTRANS_X = " + mMatrixValues[2]
-                        + "; \nMSCALE_Y = " + mMatrixValues[4] + "; MSKEW_Y = " + mMatrixValues[3] + "; MTRANS_Y = " + mMatrixValues[5]
-                        + "; \nMPERSP_0 = " + mMatrixValues[6] + "; MPERSP_1 = " + mMatrixValues[7] + "; MPERSP_2 = " + mMatrixValues[8]);
-                checkLocation();
-                break;
-        }
-        imageView.setImageMatrix(mMatrix);
-        return true;
-    }
-
     private void actionDown(MotionEvent event) {
         imageView.setScaleType(ScaleType.MATRIX);
         mMatrix.set(imageView.getImageMatrix());
@@ -325,6 +266,34 @@ public class ImageCaptureHelper implements View.OnTouchListener {
         }
         if (moveX != 0 || moveY != 0) {
             handler.sendEmptyMessage(0);
+        }
+    }
+
+    private class OnTouchListener implements View.OnTouchListener {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            switch (event.getAction() & MotionEvent.ACTION_MASK) {
+                case MotionEvent.ACTION_DOWN:
+                    actionDown(event);
+                    break;
+                case MotionEvent.ACTION_POINTER_DOWN:
+                    actionPointerDown(event);
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    actionMove(event);
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_POINTER_UP:
+                    mMode = MODE_NONE;
+                    mMatrix.getValues(mMatrixValues);
+                    L.log("MSCALE_X = " + mMatrixValues[0] + "; MSKEW_X = " + mMatrixValues[1] + "; MTRANS_X = " + mMatrixValues[2]
+                            + "; \nMSCALE_Y = " + mMatrixValues[4] + "; MSKEW_Y = " + mMatrixValues[3] + "; MTRANS_Y = " + mMatrixValues[5]
+                            + "; \nMPERSP_0 = " + mMatrixValues[6] + "; MPERSP_1 = " + mMatrixValues[7] + "; MPERSP_2 = " + mMatrixValues[8]);
+                    checkLocation();
+                    break;
+            }
+            imageView.setImageMatrix(mMatrix);
+            return true;
         }
     }
 }
