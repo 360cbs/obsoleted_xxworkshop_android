@@ -8,6 +8,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
@@ -23,11 +24,11 @@ public class ImageCaptureHelper {
     /**
      * 拖动模式
      */
-    private static final int MODE_DRAG = 1;
+    private static final int MODE_TRANS = 1;
     /**
      * 缩放模式
      */
-    private static final int MODE_ZOOM = 2;
+    private static final int MODE_SCALE = 2;
     /**
      * 没有模式
      */
@@ -36,68 +37,26 @@ public class ImageCaptureHelper {
     private int mMode = MODE_NONE;
 
     private ImageView imageView = null;
-
     private FocusView focusView = null;
 
-    private Rect rect;
-
+    private Rect limitRect;
+    private int ImageWidth;
+    private int ImageHeight;
     private Bitmap bitmap = null;
 
-    private Matrix mMatrix = new Matrix();
-    private Matrix mSavedMatrix = new Matrix();
+    /**
+     * MSCALE_X	    MSKEW_X		MTRANS_X
+     * MSKEW_Y		MSCALE_Y	MTRANS_Y
+     * MPERSP_0	    MPERSP_1	MPERSP_2
+     */
+    private Matrix startMatrix = new Matrix();
+    private PointF transStartPoint = new PointF();
+    private float scaleStartDistance = 0;
+    private PointF scaleCenterPoint = new PointF();
 
-    private PointF mStartPoint = new PointF();
-    private PointF mZoomPoint = new PointF();
-    private float mOldDist = 1f;
+    private ResetHandler resetHandler = new ResetHandler();
 
-    private float[] mMatrixValues = new float[9];
-
-    private float mMiniScale = 1f;
-
-    private float moveX = 0f;
-    private float moveY = 0f;
-    private Handler handler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            if (Math.abs(moveX) > 150 && Math.abs(moveY) > 150) {
-                float x = 100f;
-                float y = 100f;
-                if (moveX < 0) {
-                    x = -100f;
-                }
-                if (y < 0) {
-                    y = -100f;
-                }
-                mMatrix.postTranslate(x, y);
-                moveX = moveX > 0 ? moveX - 100f : moveX + 100f;
-                moveY = moveY > 0 ? moveY - 100f : moveY + 100f;
-            } else {
-                if (moveX > 25 || moveY > 25) {
-                    mMatrix.postTranslate(moveX / 2, moveY / 2);
-                    moveX = moveX / 2;
-                    moveY = moveY / 2;
-                } else {
-                    mMatrix.postTranslate(moveX, moveY);
-                    moveX = 0;
-                    moveY = 0;
-                }
-            }
-            imageView.setImageMatrix(mMatrix);
-            if (moveX != 0 || moveY != 0) {
-                handler.sendEmptyMessageDelayed(0, 50);
-            } else {
-                mMatrix.set(imageView.getImageMatrix());
-                mMatrix.getValues(mMatrixValues);
-            }
-        }
-    };
-
-    //	Matrix的Value是一个3x3的矩阵，文档中的Matrix获取数据的方法是void getValues(float[] values)，对于Matrix内字段的顺序
-//	并没有很明确的说明，经过测试发现他的顺序是这样的
-//	MSCALE_X	MSKEW_X		MTRANS_X
-//	MSKEW_Y		MSCALE_Y	MTRANS_Y
-//	MPERSP_0	MPERSP_1	MPERSP_2	
-    public ImageCaptureHelper(Context context, FrameLayout rootView) {
+    public ImageCaptureHelper(Context context, final FrameLayout rootView) {
         imageView = new ImageView(context);
 
         rootView.addView(imageView, new FrameLayout.LayoutParams(
@@ -109,20 +68,31 @@ public class ImageCaptureHelper {
                 FrameLayout.LayoutParams.MATCH_PARENT));
 
         imageView.setOnTouchListener(new OnTouchListener());
-    }
 
-    public ImageCaptureHelper setRect(Rect rect, Anchor anchor) {
-        focusView.init(rect, anchor);
-        this.rect = F.convertRect(rect, anchor);
-        return this;
+        ViewTreeObserver vto = rootView.getViewTreeObserver();
+        vto.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                int height = rootView.getHeight();
+                int width = rootView.getWidth();
+                int size = width < height ? width : height;
+                Rect rect = new Rect(width / 2, height / 2, size, size);
+                focusView.init(rect, Anchor.Center);
+                ImageCaptureHelper.this.limitRect = F.convertRect(rect, Anchor.Center);
+            }
+        });
     }
 
     public ImageCaptureHelper setImage(Bitmap bitmap) {
         this.bitmap = bitmap;
-        imageView.setScaleType(ScaleType.FIT_CENTER);
+        imageView.setScaleType(ScaleType.CENTER_CROP);
         imageView.setImageBitmap(bitmap);
-        mMatrix.set(imageView.getImageMatrix());
-        mMatrix.getValues(mMatrixValues);
+        return this;
+    }
+
+    public ImageCaptureHelper setImageSize(int width, int height) {
+        ImageWidth = width;
+        ImageHeight = height;
         return this;
     }
 
@@ -133,139 +103,145 @@ public class ImageCaptureHelper {
      */
     public Bitmap capture() {
         if (bitmap != null) {
-//			焦点框内的图片为缩放的图片，起始坐标（相对屏幕）有可能小于零，
-//			可以通过0 + (focusView.getFocusLeft() - mMatrixValues[2])获得真实的坐标（图片时从0开始的），
-//			但是这个还是缩放的，别忘了除以缩放比例
-            int left = (int) ((rect.x - mMatrixValues[2]) / mMatrixValues[0]);
-            int top = (int) ((rect.y - mMatrixValues[5]) / mMatrixValues[4]);
-            int right = (int) ((rect.x + rect.w - mMatrixValues[2]) / mMatrixValues[0]);
-            int bottom = (int) ((rect.y + rect.h - mMatrixValues[5]) / mMatrixValues[4]);
-            correctSize(left, top, right, bottom);
-            //截图
-            //截图时需传递的参数为:原始图片,截图框左/上边线距原始图片左/上边线距离,截图框宽/高
-            Bitmap bitmap = Graphics.cutImage(this.bitmap, new Rect(left, top, right - left, bottom - top));
-//            Bitmap bitmap = Bitmap.createBitmap(bitmap, left, top, right-left, bottom-top);
-
-            //缩放图片,控制图片边长
-
-            return Graphics.zoomImage(bitmap, 300f, 300f);
+            checkBounds();
+            float[] mvalues = new float[9];
+            imageView.getImageMatrix().getValues(mvalues);
+            int left = (int) ((limitRect.x - mvalues[2]) / mvalues[0]);
+            int top = (int) ((limitRect.y - mvalues[5]) / mvalues[4]);
+            int width = (int) (limitRect.w / mvalues[0]);
+            int height = (int) (limitRect.h / mvalues[4]);
+            float scale = ((float) ImageWidth) / ((float) width);
+            Bitmap mBitmap = Graphics.cutZoomImage(bitmap, new Rect(left, top, width, height), scale);
+//            Bitmap zBitmap = Graphics.zoomImage(mBitmap, ImageWidth, ImageHeight);
+            if (mBitmap != null) {
+                return mBitmap;
+            } else {
+                return null;
+            }
         }
         return null;
     }
 
     /**
-     * 修正图片，获得真实的边界（防止焦点框不包含图片外部时出错）
-     *
-     * @param left
-     * @param top
-     * @param right
-     * @param bottom
+     * 边界检查，防止截图区域中出现空白区域
      */
-    private void correctSize(int left, int top, int right, int bottom) {
-        mMatrix.getValues(mMatrixValues);
-        int bitmapLeft = (int) mMatrixValues[2];
-        int bitmapTop = (int) mMatrixValues[5];
-        int bitmapRight = (int) (bitmap.getWidth() * mMatrixValues[0] - mMatrixValues[2]);
-        int bitmapBottom = (int) (bitmap.getHeight() * mMatrixValues[4] - mMatrixValues[5]);
-        if (bitmapLeft > rect.x) {
-            left += (bitmapLeft - rect.x) / mMatrixValues[0];
-        }
-        if (bitmapTop > rect.y) {
-            top += (bitmapTop - rect.y) / mMatrixValues[4];
-        }
-        if (bitmapRight < (rect.x + rect.w)) {
-            right -= ((rect.x + rect.w) - bitmapRight) / mMatrixValues[0];
-        }
-        if (bitmapBottom < (rect.y + rect.h)) {
-            bottom -= ((rect.y + rect.h) - bitmapBottom) / mMatrixValues[4];
-        }
-    }
+    private void checkBounds() {
+        float[] mvalues = new float[9];
+        imageView.getImageMatrix().getValues(mvalues);
+        float ox = mvalues[2];
+        float oy = mvalues[5];
+        float ow = (bitmap.getWidth() * mvalues[0]);
+        float oh = (bitmap.getHeight() * mvalues[4]);
 
-    private float spacing(MotionEvent event) {
-        float x = event.getX(0) - event.getX(1);
-        float y = event.getY(0) - event.getY(1);
-        return (float) Math.sqrt(x * x + y * y);
-//		如果在API8以下的版本使用，采用FloatMath.sqrt()会更快，但是在API8和以上版本，Math.sqrt()更快
-//		原文：Use java.lang.Math#sqrt instead of android.util.FloatMath#sqrt() since it is faster as of API 8
-//		return FloatMath.sqrt(x * x + y * y);
-    }
-
-    private void midPoint(PointF point, MotionEvent event) {
-        float x = event.getX(0) + event.getX(1);
-        float y = event.getY(0) + event.getY(1);
-        point.set(x / 2, y / 2);
+        float destX, destY, dsw, dsh, destScale;
+        boolean flagx = false;
+        boolean flagy = false;
+        if (ow < limitRect.w) {
+            dsw = (float) limitRect.w / bitmap.getWidth();
+            flagx = true;
+        } else {
+            dsw = mvalues[0];
+        }
+        if (oh < limitRect.h) {
+            flagy = true;
+            dsh = (float) limitRect.h / bitmap.getHeight();
+        } else {
+            dsh = mvalues[4];
+        }
+        if (dsw > dsh) {
+            destScale = dsw;
+        } else {
+            destScale = dsh;
+        }
+        if (flagx || flagy) {
+            if (flagx) {
+                destX = limitRect.x;
+            } else {
+                if (ox > limitRect.x) {
+                    destX = limitRect.x;
+                } else if (ox + ow < limitRect.x + limitRect.w) {
+                    destX = limitRect.x + limitRect.w - ow;
+                } else {
+                    destX = ox;
+                }
+            }
+            if (flagy) {
+                destY = limitRect.y;
+            } else {
+                if (oy > limitRect.y) {
+                    destY = limitRect.y;
+                } else if (oy + oh < limitRect.y + limitRect.h) {
+                    destY = limitRect.y + limitRect.h - oh;
+                } else {
+                    destY = oy;
+                }
+            }
+        } else {
+            if (ox > limitRect.x) {
+                destX = limitRect.x;
+            } else if (ox + ow < limitRect.x + limitRect.w) {
+                destX = limitRect.x + limitRect.w - ow;
+            } else {
+                destX = ox;
+            }
+            if (oy > limitRect.y) {
+                destY = limitRect.y;
+            } else if (oy + oh < limitRect.y + limitRect.h) {
+                destY = limitRect.y + limitRect.h - oh;
+            } else {
+                destY = oy;
+            }
+        }
+        mvalues[0] = destScale;
+        mvalues[2] = destX;
+        mvalues[4] = destScale;
+        mvalues[5] = destY;
+        Matrix cmatrix = new Matrix();
+        cmatrix.setValues(mvalues);
+        imageView.setImageMatrix(cmatrix);
     }
 
     private void actionDown(MotionEvent event) {
+        resetHandler.cancel();
         imageView.setScaleType(ScaleType.MATRIX);
-        mMatrix.set(imageView.getImageMatrix());
-        mSavedMatrix.set(mMatrix);
-        mStartPoint.set(event.getX(), event.getY());
-        mMode = MODE_DRAG;
+        startMatrix.set(imageView.getImageMatrix());
+        transStartPoint.set(event.getX(), event.getY());
+        mMode = MODE_TRANS;
     }
 
     private void actionPointerDown(MotionEvent event) {
-        mOldDist = spacing(event);
-        if (mOldDist > 10f) {
-            mSavedMatrix.set(mMatrix);
-            midPoint(mZoomPoint, event);
-            mMiniScale = (float) rect.w / Math.min(bitmap.getWidth(), bitmap.getHeight());
-            mMode = MODE_ZOOM;
+        resetHandler.cancel();
+        imageView.setScaleType(ScaleType.MATRIX);
+        float opx = event.getX(0) - event.getX(1);
+        float opy = event.getY(0) - event.getY(1);
+        scaleStartDistance = (float) Math.sqrt(opx * opx + opy * opy);
+
+        if (scaleStartDistance > 10f) {
+            startMatrix.set(imageView.getImageMatrix());
+            scaleCenterPoint.set((event.getX(0) + event.getX(1)) / 2, (event.getY(0) + event.getY(1)) / 2);
+            mMode = MODE_SCALE;
         }
     }
 
     private void actionMove(MotionEvent event) {
-        if (mMode == MODE_DRAG) {
-            mMatrix.set(mSavedMatrix);
-            float transX = event.getX() - mStartPoint.x;
-            float transY = event.getY() - mStartPoint.y;
-            mMatrix.getValues(mMatrixValues);
-            float leftLimit = rect.x - mMatrixValues[2];
-            float topLimit = rect.y - mMatrixValues[5];
-            float rightLimit = (rect.x + rect.w) - (bitmap.getWidth() * mMatrixValues[0] + mMatrixValues[2]);
-            float bottomLimit = (rect.y + rect.h) - (bitmap.getHeight() * mMatrixValues[0] + mMatrixValues[5]);
-            if (transX > 0 && transX > leftLimit) {
-                transX = leftLimit;
+        if (mMode == MODE_TRANS) {
+            Matrix cmatrix = new Matrix();
+            cmatrix.set(startMatrix);
+            float offsetx = event.getX() - transStartPoint.x;
+            float offsety = event.getY() - transStartPoint.y;
+            cmatrix.postTranslate(offsetx, offsety);
+            imageView.setImageMatrix(cmatrix);
+        } else if (mMode == MODE_SCALE) {
+            float opx = event.getX(0) - event.getX(1);
+            float opy = event.getY(0) - event.getY(1);
+            float curDistance = (float) Math.sqrt(opx * opx + opy * opy);
+            if (curDistance > 10f) {
+                Matrix cmatrix = new Matrix();
+                cmatrix.set(startMatrix);
+                float scale = curDistance / scaleStartDistance;
+                cmatrix.postScale(scale, scale, scaleCenterPoint.x, scaleCenterPoint.y);
+                imageView.setImageMatrix(cmatrix);
             }
-            if (transY > 0 && transY > topLimit) {
-                transY = topLimit;
-            }
-            if (transX < 0 && transX < rightLimit) {
-                transX = rightLimit;
-            }
-            if (transY < 0 && transY < bottomLimit) {
-                transY = bottomLimit;
-            }
-            mMatrix.postTranslate(transX, transY);
-        } else if (mMode == MODE_ZOOM) {
-            float newDist = spacing(event);
-            if (newDist > 10f) {
-                mMatrix.set(mSavedMatrix);
-                mMatrix.getValues(mMatrixValues);
-                float scale = newDist / mOldDist;
-                if (mMatrixValues[0] * scale < mMiniScale) {
-                    scale = mMiniScale / mMatrixValues[0];
-                }
-                mMatrix.postScale(scale, scale, mZoomPoint.x, mZoomPoint.y);
-            }
-        }
-    }
-
-    private void checkLocation() {
-        float bRight = mMatrixValues[2] + bitmap.getWidth() * mMatrixValues[0];
-        float bBottom = mMatrixValues[5] + bitmap.getHeight() * mMatrixValues[4];
-        if (rect.x < mMatrixValues[2]) {
-            moveX = rect.x - mMatrixValues[2];
-        } else if ((rect.x + rect.w) > bRight) {
-            moveX = (rect.x + rect.w) - bRight;
-        }
-        if (rect.y < mMatrixValues[5]) {
-            moveY = rect.y - mMatrixValues[5];
-        } else if ((rect.y + rect.h) > bBottom) {
-            moveY = (rect.y + rect.h) - bBottom;
-        }
-        if (moveX != 0 || moveY != 0) {
-            handler.sendEmptyMessage(0);
         }
     }
 
@@ -284,16 +260,139 @@ public class ImageCaptureHelper {
                     break;
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_POINTER_UP:
+                    resetHandler.reset();
                     mMode = MODE_NONE;
-                    mMatrix.getValues(mMatrixValues);
-                    L.log("MSCALE_X = " + mMatrixValues[0] + "; MSKEW_X = " + mMatrixValues[1] + "; MTRANS_X = " + mMatrixValues[2]
-                            + "; \nMSCALE_Y = " + mMatrixValues[4] + "; MSKEW_Y = " + mMatrixValues[3] + "; MTRANS_Y = " + mMatrixValues[5]
-                            + "; \nMPERSP_0 = " + mMatrixValues[6] + "; MPERSP_1 = " + mMatrixValues[7] + "; MPERSP_2 = " + mMatrixValues[8]);
-                    checkLocation();
                     break;
             }
-            imageView.setImageMatrix(mMatrix);
             return true;
         }
+    }
+
+    public class ResetHandler extends Handler {
+        private float destX = 0;
+        private float destY = 0;
+        private float destScale = 0;
+        private int index = 0;
+
+        public void reset() {
+            this.removeMessages(0);
+
+            float[] mvalues = new float[9];
+            imageView.getImageMatrix().getValues(mvalues);
+            float ox = mvalues[2];
+            float oy = mvalues[5];
+            float ow = (bitmap.getWidth() * mvalues[0]);
+            float oh = (bitmap.getHeight() * mvalues[4]);
+
+            float dsw, dsh;
+            boolean flagx = false;
+            boolean flagy = false;
+            if (ow < limitRect.w) {
+                dsw = (float) limitRect.w / bitmap.getWidth();
+                flagx = true;
+            } else {
+                dsw = mvalues[0];
+            }
+            if (oh < limitRect.h) {
+                flagy = true;
+                dsh = (float) limitRect.h / bitmap.getHeight();
+            } else {
+                dsh = mvalues[4];
+            }
+            if (dsw > dsh) {
+                destScale = dsw;
+            } else {
+                destScale = dsh;
+            }
+            if (flagx || flagy) {
+                if (flagx) {
+                    destX = limitRect.x;
+                } else {
+                    if (ox > limitRect.x) {
+                        destX = limitRect.x;
+                    } else if (ox + ow < limitRect.x + limitRect.w) {
+                        destX = limitRect.x + limitRect.w - ow;
+                    } else {
+                        destX = ox;
+                    }
+                }
+                if (flagy) {
+                    destY = limitRect.y;
+                } else {
+                    if (oy > limitRect.y) {
+                        destY = limitRect.y;
+                    } else if (oy + oh < limitRect.y + limitRect.h) {
+                        destY = limitRect.y + limitRect.h - oh;
+                    } else {
+                        destY = oy;
+                    }
+                }
+            } else {
+                if (ox > limitRect.x) {
+                    destX = limitRect.x;
+                } else if (ox + ow < limitRect.x + limitRect.w) {
+                    destX = limitRect.x + limitRect.w - ow;
+                } else {
+                    destX = ox;
+                }
+                if (oy > limitRect.y) {
+                    destY = limitRect.y;
+                } else if (oy + oh < limitRect.y + limitRect.h) {
+                    destY = limitRect.y + limitRect.h - oh;
+                } else {
+                    destY = oy;
+                }
+            }
+
+            startMatrix.set(imageView.getImageMatrix());
+            index = 0;
+            sendEmptyMessage(0);
+        }
+
+        public void cancel() {
+            this.removeMessages(0);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            if (index <= 8) {
+                float[] mvalues = new float[9];
+                imageView.getImageMatrix().getValues(mvalues);
+                float cx = mvalues[2];
+                float cy = mvalues[5];
+                float cs = mvalues[0];
+
+                float offx = (destX - cx) / 2;
+                float offy = (destY - cy) / 2;
+                float offs = (destScale - cs) / 2;
+                mvalues[0] += offs;
+                mvalues[2] += offx;
+                mvalues[4] += offs;
+                mvalues[5] += offy;
+                Matrix cmatrix = new Matrix();
+                cmatrix.setValues(mvalues);
+                imageView.setImageMatrix(cmatrix);
+                sendEmptyMessageDelayed(0, 50);
+            } else if (index == 9) {
+                float[] mvalues = new float[9];
+                imageView.getImageMatrix().getValues(mvalues);
+                mvalues[0] = destScale;
+                mvalues[2] = destX;
+                mvalues[4] = destScale;
+                mvalues[5] = destY;
+                Matrix cmatrix = new Matrix();
+                cmatrix.setValues(mvalues);
+                imageView.setImageMatrix(cmatrix);
+            }
+            index++;
+        }
+    }
+
+    private void printMatrix(Matrix matrix) {
+        float[] mMatrixValues = new float[9];
+        matrix.getValues(mMatrixValues);
+        L.log("MSCALE_X = " + mMatrixValues[0] + "; MSKEW_X = " + mMatrixValues[1] + "; MTRANS_X = " + mMatrixValues[2]
+                + "; \nMSCALE_Y = " + mMatrixValues[4] + "; MSKEW_Y = " + mMatrixValues[3] + "; MTRANS_Y = " + mMatrixValues[5]
+                + "; \nMPERSP_0 = " + mMatrixValues[6] + "; MPERSP_1 = " + mMatrixValues[7] + "; MPERSP_2 = " + mMatrixValues[8]);
     }
 }
