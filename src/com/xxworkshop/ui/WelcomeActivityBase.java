@@ -27,6 +27,7 @@ public abstract class WelcomeActivityBase extends Activity {
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         setContentView(getLayoutResId());
 
         root = (FrameLayout) findViewById(getRootViewId());
