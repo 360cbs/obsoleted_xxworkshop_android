@@ -18,6 +18,9 @@ public abstract class DataManagerBase extends SQLiteOpenHelper {
     public DataManagerBase(Context context, String name, int version) {
         super(context, name, null, version);
     }
+    private List<String> transactionSqls = new ArrayList<String>();
+    private List<String[]> transactionParams = new ArrayList<String[]>();
+    private boolean isTransaction = false;
 
     public List<Hashtable<String, String>> query(String sql, String[] selectionArgs) {
         List<Hashtable<String, String>> results = new ArrayList<Hashtable<String, String>>();
@@ -79,6 +82,11 @@ public abstract class DataManagerBase extends SQLiteOpenHelper {
     }
 
     public void execute(String sql, String[] args) {
+        if (isTransaction) {
+            transactionSqls.add(sql);
+            transactionParams.add(args);
+            return;
+        }
         SQLiteDatabase dbw = this.getWritableDatabase();
         dbw.execSQL(sql, args);
         dbw.close();
@@ -91,6 +99,19 @@ public abstract class DataManagerBase extends SQLiteOpenHelper {
     public void execute(SQLiteDatabase database, String sql) {
         database.execSQL(sql);
         database.close();
+    }
+
+    public void beginTransaction() {
+        transactionSqls.clear();
+        transactionParams.clear();
+        isTransaction = true;
+    }
+
+    public void commitTransaction() {
+        if (isTransaction) {
+            executeBatch(transactionSqls,transactionParams);
+            isTransaction = false;
+        }
     }
 
     public void executeBatch(List<String> sqls) {
