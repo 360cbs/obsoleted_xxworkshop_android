@@ -10,8 +10,12 @@ import android.os.Message;
 import com.xxworkshop.common.F;
 import com.xxworkshop.common.L;
 import com.xxworkshop.common.S;
+import com.xxworkshop.network.decoder.Decoder;
+import com.xxworkshop.network.decoder.TextDecoder;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -43,12 +47,14 @@ public final class HttpConnection {
 
     private String cookie = "";
 
+    private Decoder defaultDecoder = new TextDecoder();
+
     public void sendRequest(String url, Hashtable<String, String> params) {
-        sendRequest(url, params, HttpMethod.Get, null, false, 0);
+        sendRequest(url, params, HttpMethod.Get, new Hashtable<String, String>(), null, null, false, 0);
     }
 
     public void sendRequest(String url, Hashtable<String, String> params, ResponseHandler handler) {
-        sendRequest(url, params, HttpMethod.Get, handler, false, 0);
+        sendRequest(url, params, HttpMethod.Get, new Hashtable<String, String>(), null, handler, false, 0);
     }
 
     public void sendRequest(String url, Hashtable<String, String> params, boolean useCache) {
@@ -56,11 +62,11 @@ public final class HttpConnection {
         if (useCache) {
             cacheTimeout = DefaultCacheTimeout;
         }
-        sendRequest(url, params, HttpMethod.Get, null, useCache, cacheTimeout);
+        sendRequest(url, params, HttpMethod.Get, new Hashtable<String, String>(), null, null, useCache, cacheTimeout);
     }
 
     public void sendRequest(String url, Hashtable<String, String> params, boolean useCache, int cacheTimeout) {
-        sendRequest(url, params, HttpMethod.Get, null, useCache, cacheTimeout);
+        sendRequest(url, params, HttpMethod.Get, new Hashtable<String, String>(), null, null, useCache, cacheTimeout);
     }
 
     public void sendRequest(String url, Hashtable<String, String> params, ResponseHandler handler, boolean useCache) {
@@ -68,15 +74,15 @@ public final class HttpConnection {
         if (useCache) {
             cacheTimeout = DefaultCacheTimeout;
         }
-        sendRequest(url, params, HttpMethod.Get, handler, useCache, cacheTimeout);
+        sendRequest(url, params, HttpMethod.Get, new Hashtable<String, String>(), null, handler, useCache, cacheTimeout);
     }
 
     public void sendRequest(String url, Hashtable<String, String> params, ResponseHandler handler, boolean useCache, int cacheTimeout) {
-        sendRequest(url, params, HttpMethod.Get, handler, useCache, cacheTimeout);
+        sendRequest(url, params, HttpMethod.Get, new Hashtable<String, String>(), null, handler, useCache, cacheTimeout);
     }
 
-    public void sendRequest(String url, Hashtable<String, String> params, String method, ResponseHandler handler, boolean useCache, int cacheTimeout) {
-        XXHttpThread thread = new XXHttpThread(url, params, method, handler, useCache, cacheTimeout);
+    public void sendRequest(String url, Hashtable<String, String> params, String method, Hashtable<String, String> headers, Decoder decoder, ResponseHandler handler, boolean useCache, int cacheTimeout) {
+        XXHttpThread thread = new XXHttpThread(url, params, method, headers, decoder, handler, useCache, cacheTimeout);
         thread.start();
     }
 
@@ -104,14 +110,18 @@ public final class HttpConnection {
     private class XXHttpThread extends Thread {
         private String url;
         private Hashtable<String, String> params;
+        private Hashtable<String, String> headers;
+        private Decoder decoder;
         private String method;
         private ResponseHandler handler;
         private boolean useCache;
         private int cacheTimeout;
 
-        public XXHttpThread(String url, Hashtable<String, String> params, String method, ResponseHandler handler, boolean useCache, int cacheTimeout) {
+        public XXHttpThread(String url, Hashtable<String, String> params, String method, Hashtable<String, String> headers, Decoder decoder, ResponseHandler handler, boolean useCache, int cacheTimeout) {
             this.url = url;
             this.params = params;
+            this.headers = headers;
+            this.decoder = decoder;
             this.method = method;
             this.handler = handler;
             this.useCache = useCache;
@@ -150,6 +160,10 @@ public final class HttpConnection {
             try {
                 HttpURLConnection connection;
                 if (method.equals(HttpMethod.Post)) {
+                    for (String key : params.keySet()) {
+                        params.put(key, URLEncoder.encode(params.get(key)));
+                    }
+                    sparams = F.map2String(params, "=", "&");
                     connection = (HttpURLConnection) (new URL(surl)).openConnection();
                     connection.setDoInput(true);
                     connection.setDoOutput(true);
@@ -158,6 +172,11 @@ public final class HttpConnection {
                     connection.setReadTimeout(10000);
                     if (SessionEnabled && !cookie.equals("")) {
                         connection.setRequestProperty("Cookie", cookie);
+                    }
+                    if (headers != null) {
+                        for (String key : headers.keySet()) {
+                            connection.setRequestProperty(key, headers.get(key));
+                        }
                     }
                     connection.connect();
 
@@ -176,12 +195,15 @@ public final class HttpConnection {
                     String fullurl = surl + "?" + sparams;
                     connection = (HttpURLConnection) (new URL(fullurl)).openConnection();
                     connection.setDoInput(true);
-                    connection.setDoOutput(true);
                     connection.setConnectTimeout(5000);
                     connection.setReadTimeout(10000);
-                    connection.setRequestMethod(method);
                     if (SessionEnabled && !cookie.equals("")) {
                         connection.setRequestProperty("Cookie", cookie);
+                    }
+                    if (headers != null) {
+                        for (String key : headers.keySet()) {
+                            connection.setRequestProperty(key, headers.get(key));
+                        }
                     }
                     connection.connect();
                 }
@@ -193,33 +215,35 @@ public final class HttpConnection {
                     }
                 }
 
-                BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
-                String line = null;
-                StringBuilder sb = new StringBuilder();
-                while (null != (line = br.readLine())) {
-                    sb.append(line);
-                    sb.append("\n");
+                L.log("response code: " + connection.getResponseCode());
+
+                Object result = null;
+                if (decoder == null) {
+                    result = defaultDecoder.decode(connection.getInputStream());
+                } else {
+                    result = decoder.decode(connection.getInputStream());
                 }
-                br.close();
                 connection.disconnect();
 
                 if (Debug) {
-                    L.log("<==========\nresult: " + sb.toString());
+                    L.log("<==========\nresult: " + result.toString());
                 }
 
                 // cache
-                if (caches.containsKey(cacheKey)) {
-                    CacheItem ci = caches.get(cacheKey);
-                    ci.content = sb.toString();
-                    ci.timestamp = S.getTimeStamp();
-                } else {
-                    CacheItem ci = new CacheItem();
-                    ci.content = sb.toString();
-                    ci.timestamp = S.getTimeStamp();
-                    caches.put(cacheKey, ci);
+                if (result != null) {
+                    if (caches.containsKey(cacheKey)) {
+                        CacheItem ci = caches.get(cacheKey);
+                        ci.content = result;
+                        ci.timestamp = S.getTimeStamp();
+                    } else {
+                        CacheItem ci = new CacheItem();
+                        ci.content = result;
+                        ci.timestamp = S.getTimeStamp();
+                        caches.put(cacheKey, ci);
+                    }
                 }
 
-                Response response = new Response(url, params, true, sb.toString());
+                Response response = new Response(url, params, true, result);
                 HashMap<String, Object> map = new HashMap<String, Object>();
                 map.put("response", response);
                 map.put("handler", handler);
@@ -228,7 +252,7 @@ public final class HttpConnection {
                 messageHandler.sendMessage(message);
             } catch (IOException e) {
                 e.printStackTrace();
-                Response response = new Response(url, params, false, "");
+                Response response = new Response(url, params, false, null);
                 HashMap<String, Object> map = new HashMap<String, Object>();
                 map.put("response", response);
                 map.put("handler", handler);
@@ -260,6 +284,6 @@ public final class HttpConnection {
 
     private class CacheItem {
         public double timestamp;
-        public String content;
+        public Object content;
     }
 }

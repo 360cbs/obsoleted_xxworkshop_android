@@ -11,9 +11,9 @@ public class Response {
     public String url;
     public Hashtable<String, String> params;
     public boolean status;
-    public String result;
+    public Object result;
 
-    public Response(String url, Hashtable<String, String> params, boolean status, String result) {
+    public Response(String url, Hashtable<String, String> params, boolean status, Object result) {
         this.url = url;
         this.params = params;
         this.status = status;
